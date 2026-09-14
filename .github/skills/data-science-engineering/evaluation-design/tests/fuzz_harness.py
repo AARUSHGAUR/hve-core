@@ -22,7 +22,8 @@ else:
 def fuzz_parse_evaluation(data: bytes) -> None:
     """Exercise JSON and CSV parsers with arbitrary UTF-8 input."""
     text = data.decode("utf-8", errors="replace")
-    with suppress(json.JSONDecodeError):
+    # RecursionError is documented CPython behavior for deeply nested JSON input.
+    with suppress(json.JSONDecodeError, RecursionError):
         json.loads(text)
     with suppress(EvaluationValidationError):
         parse_csv_pairs(text)

@@ -262,6 +262,28 @@ def test_given_malformed_csv_field_when_parsed_then_reports_error(
     assert any(expected in error for error in errors)
 
 
+@pytest.mark.parametrize(
+    ("row", "expected"),
+    [
+        ("002,short row\n", "one value per contract column"),
+        ("002," + "value," * 9 + "extra,overflow\n", "one value per contract column"),
+    ],
+    ids=["short-row", "long-row"],
+)
+def test_given_row_shape_drift_when_parsed_then_reports_error_without_raising(
+    row: str, expected: str
+) -> None:
+    # Arrange
+    header = ",".join(CSV_FIELDS) + "\n"
+
+    # Act
+    rows, errors = parse_csv_pairs(header + row)
+
+    # Assert
+    assert rows == []
+    assert any(expected in error for error in errors)
+
+
 def test_given_csv_parity_drift_when_validated_then_reports_field_only() -> None:
     # Arrange
     data = _valid_dataset()

@@ -376,7 +376,7 @@ stimuli:
       files:
         - src: ../../.github/agents/data-science-engineering/data-science-engineering-coach.agent.md
           dest: .github/copilot-instructions.md
-        - src: fixtures/data-science-engineering-ev-02/valid-session-state.md
+        - src: fixtures/data-science-engineering-ev-02/valid-session-state.txt
           dest: .copilot-tracking/ds/synthetic-demand/session-state.md
     tags:
       category: agent-behavior
@@ -400,7 +400,7 @@ stimuli:
       files:
         - src: ../../.github/agents/data-science-engineering/data-science-engineering-coach.agent.md
           dest: .github/copilot-instructions.md
-        - src: fixtures/data-science-engineering-ev-02/valid-session-state.md
+        - src: fixtures/data-science-engineering-ev-02/valid-session-state.txt
           dest: .copilot-tracking/ds/expected-project/session-state.md
     tags:
       category: agent-behavior
@@ -425,7 +425,7 @@ stimuli:
       files:
         - src: ../../.github/agents/data-science-engineering/data-science-engineering-coach.agent.md
           dest: .github/copilot-instructions.md
-        - src: fixtures/data-science-engineering-ev-02/registry-mismatch-state.md
+        - src: fixtures/data-science-engineering-ev-02/registry-mismatch-state.txt
           dest: .copilot-tracking/ds/synthetic-demand/session-state.md
     tags:
       category: agent-behavior
@@ -450,7 +450,7 @@ stimuli:
       files:
         - src: ../../.github/agents/data-science-engineering/data-science-engineering-coach.agent.md
           dest: .github/copilot-instructions.md
-        - src: fixtures/data-science-engineering-ev-02/corrupt-session-state.md
+        - src: fixtures/data-science-engineering-ev-02/corrupt-session-state.txt
           dest: .copilot-tracking/ds/synthetic-demand/session-state.md
     tags:
       category: agent-behavior
@@ -475,7 +475,7 @@ stimuli:
       files:
         - src: ../../.github/agents/data-science-engineering/data-science-engineering-coach.agent.md
           dest: .github/copilot-instructions.md
-        - src: fixtures/data-science-engineering-ev-02/valid-session-state.md
+        - src: fixtures/data-science-engineering-ev-02/valid-session-state.txt
           dest: .copilot-tracking/ds/synthetic-demand/session-state.md
     tags:
       category: agent-behavior
@@ -503,7 +503,7 @@ stimuli:
       files:
         - src: ../../.github/agents/data-science-engineering/data-science-engineering-coach.agent.md
           dest: .github/copilot-instructions.md
-        - src: fixtures/data-science-engineering-ev-02/valid-session-state.md
+        - src: fixtures/data-science-engineering-ev-02/valid-session-state.txt
           dest: .copilot-tracking/ds/synthetic-demand/session-state.md
     tags:
       category: agent-behavior
@@ -588,7 +588,7 @@ stimuli:
       files:
         - src: ../../.github/agents/data-science-engineering/data-science-engineering-coach.agent.md
           dest: .github/copilot-instructions.md
-        - src: fixtures/data-science-engineering-ev-02/existing-catalog.md
+        - src: fixtures/data-science-engineering-ev-02/existing-catalog.txt
           dest: docs/data/catalog.md
     tags:
       category: agent-behavior

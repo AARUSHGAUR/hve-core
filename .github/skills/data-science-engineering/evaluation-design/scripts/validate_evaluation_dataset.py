@@ -124,6 +124,11 @@ def parse_csv_pairs(text: str) -> tuple[list[dict[str, Any]], list[str]]:
         rows: list[dict[str, Any]] = []
         errors: list[str] = []
         for row_number, raw in enumerate(reader, start=2):
+            if None in raw or any(raw[field] is None for field in CSV_FIELDS):
+                errors.append(
+                    f"CSV row {row_number} does not have one value per contract column"
+                )
+                continue
             populations, population_errors = _decode_list(
                 raw["populations"], "populations", row_number
             )
