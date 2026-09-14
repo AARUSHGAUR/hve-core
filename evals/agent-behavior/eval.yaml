@@ -11,6 +11,7 @@ defaults:
   runs: 5
   timeout: 120s
   executor: copilot-sdk
+  judge_model: claude-sonnet-5
 
 # Skill paths are resolved relative to this spec's directory (evals/agent-behavior/),
 # so they ascend to the repo root before descending into .github/skills.
