@@ -39,6 +39,7 @@ function MermaidRenderer({ value }: Props): ReactNode {
   const [id] = useState(() => `mermaid-svg-${Math.round(Math.random() * 10000000)}`);
   const [result, setResult] = useState<RenderResult | null>(null);
   const [error, setError] = useState<unknown>(null);
+  const renderGeneration = useRef(0);
   const { colorMode } = useColorMode();
   const mermaidConfig = (useThemeConfig() as unknown as ThemeConfig).mermaid;
   const config = useMemo<MermaidConfig>(
@@ -48,10 +49,10 @@ function MermaidRenderer({ value }: Props): ReactNode {
 
   useEffect(() => {
     let active = true;
-    setResult(null);
     setError(null);
 
-    enqueueRender(id, value, config).then(
+    renderGeneration.current += 1;
+    enqueueRender(id + '-' + renderGeneration.current, value, config).then(
       (renderResult) => {
         if (active) {
           setResult(renderResult);
