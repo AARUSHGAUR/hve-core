@@ -778,7 +778,7 @@ defaults:
             $diagnostic.erroredTrials | Should -Be 1
             $diagnostic.errors[0].category | Should -Be 'model-unavailable'
         }
-        @($summary.executionDiagnostics.model | Sort-Object -Unique) | Should -Be @('claude-sonnet-4.6', 'gpt-5.6-luna')
+        @($summary.executionDiagnostics.model | Sort-Object -Unique) | Should -Be @('claude-sonnet-5', 'gpt-5.6-luna')
         @($summary.executionDiagnostics.variant | Sort-Object -Unique) | Should -Be @('baseline', 'customized')
         $text | Should -Not -Match 'synthetic-private|example\.invalid|Bearer'
         $summary.invocationFailures | Should -BeGreaterThan 0
