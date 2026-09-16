@@ -138,16 +138,25 @@ test('recovers through the error boundary after an initial rejection', async () 
     .mockRejectedValueOnce(new Error('render failed'))
     .mockResolvedValueOnce(recovered);
   const consoleError = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+  const focusGraphic = jest.spyOn(SVGElement.prototype, 'focus');
 
   try {
     const view = render(<Mermaid value="flowchart LR; A --> B" />);
     expect(await screen.findByText('render failed')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('render failed');
 
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
 
-    await waitFor(() => expect(view.container.querySelector('[data-render="recovered"]')).toBeInTheDocument());
+    const recoveredGraphic = await waitFor(() => {
+      const graphic = view.container.querySelector('[data-render="recovered"]');
+      expect(graphic).toBeInTheDocument();
+      return graphic;
+    });
+    expect(recoveredGraphic).toHaveAttribute('tabindex', '-1');
+    expect(focusGraphic).toHaveBeenCalledTimes(1);
     expect(mockRender).toHaveBeenCalledTimes(2);
   } finally {
+    focusGraphic.mockRestore();
     consoleError.mockRestore();
   }
 });

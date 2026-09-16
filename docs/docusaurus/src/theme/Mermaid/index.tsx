@@ -35,7 +35,7 @@ function enqueueRender(id: string, text: string, config: MermaidConfig): Promise
   return render;
 }
 
-function MermaidRenderer({ value }: Props): ReactNode {
+function MermaidRenderer({ value, retryPending }: Props & { retryPending: { current: boolean } }): ReactNode {
   const [id] = useState(() => `mermaid-svg-${Math.round(Math.random() * 10000000)}`);
   const [result, setResult] = useState<RenderResult | null>(null);
   const [error, setError] = useState<unknown>(null);
@@ -77,15 +77,27 @@ function MermaidRenderer({ value }: Props): ReactNode {
     return null;
   }
 
-  return <MermaidRenderResult result={result} />;
+  return <MermaidRenderResult result={result} retryPending={retryPending} />;
 }
 
-function MermaidRenderResult({ result }: { result: RenderResult }): ReactNode {
+function MermaidRenderResult({
+  result,
+  retryPending,
+}: {
+  result: RenderResult;
+  retryPending: { current: boolean };
+}): ReactNode {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     result.bindFunctions?.(containerRef.current!);
-  }, [result]);
+    if (retryPending.current) {
+      retryPending.current = false;
+      const graphic = containerRef.current?.querySelector<SVGElement>('svg[role~="graphics-document"]');
+      graphic?.setAttribute('tabindex', '-1');
+      graphic?.focus();
+    }
+  }, [result, retryPending]);
 
   return (
     <div
@@ -96,10 +108,45 @@ function MermaidRenderResult({ result }: { result: RenderResult }): ReactNode {
   );
 }
 
-export default function Mermaid(props: Props): ReactNode {
+function MermaidErrorFallback({
+  error,
+  tryAgain,
+  retryPending,
+}: {
+  error: Error;
+  tryAgain: () => void;
+  retryPending: { current: boolean };
+}): ReactNode {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (retryPending.current) {
+      retryPending.current = false;
+      containerRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
+    }
+  }, [retryPending]);
+
   return (
-    <ErrorBoundary fallback={(params) => <ErrorBoundaryErrorMessageFallback {...params} />}>
-      <MermaidRenderer {...props} />
+    <div ref={containerRef} role="alert" aria-atomic="true">
+      <ErrorBoundaryErrorMessageFallback
+        error={error}
+        tryAgain={() => {
+          retryPending.current = true;
+          tryAgain();
+        }}
+      />
+    </div>
+  );
+}
+
+export default function Mermaid(props: Props): ReactNode {
+  const retryPending = useRef(false);
+
+  return (
+    <ErrorBoundary fallback={(params) => (
+      <MermaidErrorFallback {...params} retryPending={retryPending} />
+    )}>
+      <MermaidRenderer {...props} retryPending={retryPending} />
     </ErrorBoundary>
   );
 }
