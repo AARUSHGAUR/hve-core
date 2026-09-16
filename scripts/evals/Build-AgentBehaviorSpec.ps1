@@ -192,7 +192,6 @@ function Read-PartialStimuli {
 
         $injected.Add([pscustomobject]@{
                 PartialPath   = $Path
-                PartialSlug   = $Slug
                 StimulusName  = [string]$item['name']
                 StimulusEntry = $item
             })
