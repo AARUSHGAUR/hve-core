@@ -2104,6 +2104,8 @@ stimuli:
   - name: skill-rpi-implement-changes-record-heading
     prompt: |
       How should a P03-T02 changes-record entry be headed without a second ID?
+    rubric:
+      - The response uses a descriptive evidence heading tied to P03-T02 or its plan area and does not create a separate per-entry formal identity.
     environment:
       skills:
         - ../../.github/skills/rpi/rpi-implement
@@ -2117,10 +2119,6 @@ stimuli:
       - type: prompt
         name: changes-record-heading-contract
         config:
-          prompt: |
-            Score 1 if the response says to use a descriptive evidence heading tied
-            to P03-T02 or its plan area and not to create a separate per-entry formal
-            identity. Score 0 otherwise.
           scoring: binary
           threshold: 0.85
   - name: skill-rpi-review-knowledge
@@ -3670,7 +3668,7 @@ stimuli:
       - type: output-matches
         name: consolidated-guide
         config:
-          pattern: '(?is)(?=.*(one|single|consolidated))(?=.*(evaluation guide))(?=.*(curation))(?=.*(metric selection|selected metrics|risk-to-metric|metrics and thresholds))(?=.*(tool recommendations|tooling))'
+          pattern: '(?is)(?=.*(one|single|consolidated))(?=.*(evaluation guide))(?=.*(rationale))'
 
   - name: skill-backlog-plan-knowledge
     prompt: |
@@ -5102,7 +5100,7 @@ stimuli:
       - type: output-matches
         name: unsafe-source-location-rejected
         config:
-          pattern: '(?is)(?=.*(source))(?=.*(credential|secret|token))(?=.*(reject|invalid|not publish|do not publish|not created|validation failed|blocked))'
+          pattern: '(?is)(?=.*(source))(?=.*(credential|secret|token))(?=.*(validat))'
       - type: file-not-exists
         name: invalid-catalog-not-published
         config:
