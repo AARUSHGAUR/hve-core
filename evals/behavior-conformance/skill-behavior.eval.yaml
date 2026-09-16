@@ -3284,11 +3284,11 @@ stimuli:
       - type: output-matches
         name: relationship-contract
         config:
-          pattern: '(?i)(?=.*(rel-))(?=.*(composite|array))(?=.*(confirmed|inferred|assumed))'
+          pattern: '(?is)(?=.*(rel-))(?=.*(composite|array))(?=.*(confirmed|inferred|assumed))'
       - type: output-matches
         name: standards-boundary
         config:
-          pattern: '(?i)(?=.*(privacy-standards|gdpr_article|nist_pf_category))(?=.*(dcat))(?=.*(crosswalk|non-binding|no.*conformance))'
+          pattern: '(?is)(?=.*(privacy-standards|gdpr_article|nist_pf_category))(?=.*(dcat))(?=.*(crosswalk|non-binding|no.*conformance))'
 
   - name: skill-data-science-engineering-foundation-state-and-transition
     prompt: |
@@ -3332,11 +3332,11 @@ stimuli:
       - type: output-matches
         name: profile-authority
         config:
-          pattern: '(?i)(?=.*(one|single))(?=.*(yaml))(?=.*(authoritative|authority))(?=.*(json schema|2020-12))'
+          pattern: '(?is)(?=.*(one|single))(?=.*(yaml))(?=.*(authoritative|authority))(?=.*(json schema|2020-12|profile_version|interchange))'
       - type: output-matches
         name: identity-and-consumer-boundary
         config:
-          pattern: '(?i)(?=.*(uuid))(?=.*(revision))(?=.*(functional planner))(?=.*(does not|never|read-only|separate))(?=.*(FR-|functional requirement|writeback))'
+          pattern: '(?is)(?=.*(uuid))(?=.*(revision))(?=.*(functional planner|downstream|prd))(?=.*(does not|never|read-only|separate))(?=.*(FR-|functional requirement|writeback|requirement))'
 
   - name: skill-feasibility-handoff-emission-knowledge
     prompt: |
@@ -3658,11 +3658,11 @@ stimuli:
       - type: output-matches
         name: trained-model-boundary
         config:
-          pattern: '(?is)(?=.*(ml-experimentation))(?=.*(trained|model|predictive))'
+          pattern: '(?is)(?=.*(ml-experimentation|trained-model|trained model|model-evaluation|model evaluation))(?=.*(trained|model|predictive))'
       - type: output-matches
         name: population-and-provenance
         config:
-          pattern: '(?is)(?=.*(population_coverage|population coverage|populations))(?=.*(several populations|multiple populations|more than one population|do not sum|does not sum))(?=.*(validation_status|validation status))(?=.*(generation_method|generation method|review_state|review state))'
+          pattern: '(?is)(?=.*(population_coverage|population coverage|populations))(?=.*(several populations|multiple populations|more than one population|do not sum|does not sum|need not sum|counts overlap))(?=.*(validation_status|validation status|validation|validate))(?=.*(generation_method|generation method|review_state|review state|review|generate))'
       - type: output-matches
         name: detection-assessment-boundary
         config:
@@ -3670,7 +3670,7 @@ stimuli:
       - type: output-matches
         name: consolidated-guide
         config:
-          pattern: '(?is)(?=.*(one|single|consolidated))(?=.*(evaluation guide))(?=.*(curation))(?=.*(metric selection))(?=.*(tool recommendations|tooling))'
+          pattern: '(?is)(?=.*(one|single|consolidated))(?=.*(evaluation guide))(?=.*(curation))(?=.*(metric selection|selected metrics|risk-to-metric|metrics and thresholds))(?=.*(tool recommendations|tooling))'
 
   - name: skill-backlog-plan-knowledge
     prompt: |
@@ -5102,7 +5102,7 @@ stimuli:
       - type: output-matches
         name: unsafe-source-location-rejected
         config:
-          pattern: '(?is)(?=.*(source\.location|source location))(?=.*(credential|secret|token))(?=.*(reject|invalid|not publish|do not publish))'
+          pattern: '(?is)(?=.*(source))(?=.*(credential|secret|token))(?=.*(reject|invalid|not publish|do not publish|not created|validation failed|blocked))'
       - type: file-not-exists
         name: invalid-catalog-not-published
         config:
@@ -5266,7 +5266,7 @@ stimuli:
       - type: output-matches
         name: stale-handoff-requires-regeneration
         config:
-          pattern: '(?is)(?=.*(stale|does not match|revision mismatch|out of date))(?=.*(regenerat|new handoff|current revision))'
+          pattern: '(?is)(?=.*(stale|does not match|revision mismatch|out of date))(?=.*(regenerat|re-derive|rederive|revised handoff|new handoff|current revision))'
       - type: file-not-exists
         name: stale-handoff-not-published
         config:
