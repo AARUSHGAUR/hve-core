@@ -1,0 +1,9 @@
+/* Copyright (c) 2026 Microsoft Corporation. All rights reserved. */
+/* SPDX-License-Identifier: MIT */
+.container {
+  max-width: 100%;
+}
+
+.container > svg {
+  max-width: 100%;
+}
