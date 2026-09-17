@@ -640,130 +640,324 @@ stimuli:
           pattern: "(?is)(?=.*observed)(?=.*simulated)(?=.*assumed)(?=.*unknown)"
 
   - name: prompt-dt-method-04-convergence-conformance
-    prompt: |
-      Invoke the `dt-method-04-convergence` prompt with minimal arguments and explain how it
-      coordinates the workflow.
+    turns:
+      - |
+        Follow the staged `dt-method-04-convergence` prompt for
+        project-slug=synthetic-shift-handoff. Resume the staged Method 4
+        coaching state and assess its candidate clusters. Preserve every idea
+        identifier and the unknown perspective gap. Present a choice between
+        returning to ideation and continuing with the gap documented. Do not
+        write a convergence artifact until I choose.
+      - |
+        Continue convergence with the gap explicitly documented. Keep I-06 as
+        an unclustered idea, preserve the candidate cluster rationale and
+        evidence labels, and write the project-scoped theme-clusters artifact.
+    agent_environment:
+      skills:
+        - ../../.github/skills/design-thinking/dt-coaching-foundation
+        - ../../.github/skills/design-thinking/dt-methods
+      files:
+        - src: ../../.github/agents/design-thinking/dt-coach.agent.md
+          dest: .github/copilot-instructions.md
+        - src: ../../.github/prompts/design-thinking/dt-method-04-convergence.prompt.md
+          dest: .github/prompts/design-thinking/dt-method-04-convergence.prompt.md
+        - src: fixtures/dt-method-evidence/method-04-ideas.txt
+          dest: .copilot-tracking/dt/synthetic-shift-handoff/coaching-state.md
     tags:
       category: behavior-conformance
       prompt: dt-method-04-convergence
       advisory: "true"
     graders:
-      - type: output-matches
-        name: agent-attribution
+      - type: transcript-matches
+        name: gap-and-choice-before-convergence
+        turn: 0
         config:
-          pattern: "(?i)DT\\s+coach|method\\s*4|brainstorm|dt-method-04-convergence"
-      - type: output-matches
-        name: scope-language
+          pattern: '(?is)(?=.*(?:I-06|P-TEMP-WORKER|temporary worker))(?=.*(?:missing|unknown|unrepresented|gap))(?=.*(?:return|back|ideat))(?=.*(?:continue|proceed))(?=.*\?)'
+      - type: diff-empty
+        name: no-convergence-write-before-choice
+        turn: 0
+      - type: file-matches
+        name: theme-artifact-preserves-ideas-and-rationale
         config:
-          pattern: "(?i)convergence|cluster|theme|brainstorm"
+          path: .copilot-tracking/dt/synthetic-shift-handoff/**/*theme-clusters.md
+          pattern: '(?is)(?=.*T-01)(?=.*T-02)(?=.*I-01)(?=.*I-02)(?=.*I-03)(?=.*I-04)(?=.*I-05)(?=.*I-06)(?=.*rationale)'
+      - type: file-matches
+        name: theme-artifact-retains-coverage-gap
+        config:
+          path: .copilot-tracking/dt/synthetic-shift-handoff/**/*theme-clusters.md
+          pattern: '(?is)(?=.*(?:unknown|unrepresented|gap))(?=.*(?:temporary worker|P-TEMP-WORKER))(?=.*(?:unclustered|not clustered|retained))'
 
   - name: prompt-dt-method-04-ideation-conformance
     prompt: |
-      Invoke the `dt-method-04-ideation` prompt with minimal arguments and explain how it
-      coordinates the workflow.
+      Follow the staged `dt-method-04-ideation` prompt for
+      project-slug=synthetic-shift-handoff. Resume the staged Method 4 state,
+      use all synthetic ideas and constraints, and respond to the embedded
+      request to rank and discard ideas. Preserve generation/evaluation
+      separation, surface the unknown temporary-worker perspective, retain all
+      idea identifiers, write the project-scoped divergent-ideas artifact, and
+      finish with a user choice about broadening or continuing.
+    agent_environment:
+      skills:
+        - ../../.github/skills/design-thinking/dt-coaching-foundation
+        - ../../.github/skills/design-thinking/dt-methods
+      files:
+        - src: ../../.github/agents/design-thinking/dt-coach.agent.md
+          dest: .github/copilot-instructions.md
+        - src: ../../.github/prompts/design-thinking/dt-method-04-ideation.prompt.md
+          dest: .github/prompts/design-thinking/dt-method-04-ideation.prompt.md
+        - src: fixtures/dt-method-evidence/method-04-ideas.txt
+          dest: .copilot-tracking/dt/synthetic-shift-handoff/coaching-state.md
     tags:
       category: behavior-conformance
       prompt: dt-method-04-ideation
       advisory: "true"
     graders:
-      - type: output-matches
-        name: agent-attribution
+      - type: file-matches
+        name: divergent-artifact-retains-all-idea-identifiers
         config:
-          pattern: "(?i)DT\\s+coach|method\\s*4|brainstorm|dt-method-04-ideation"
-      - type: output-matches
-        name: scope-language
+          path: .copilot-tracking/dt/synthetic-shift-handoff/**/*divergent-ideas.md
+          pattern: '(?is)(?=.*I-01)(?=.*I-02)(?=.*I-03)(?=.*I-04)(?=.*I-05)(?=.*I-06)'
+      - type: file-matches
+        name: divergent-artifact-retains-provenance
         config:
-          pattern: "(?i)ideation|brainstorm|divergent|idea"
+          path: .copilot-tracking/dt/synthetic-shift-handoff/**/*divergent-ideas.md
+          pattern: '(?is)(?=.*(?:P-OPERATOR|operator))(?=.*(?:P-TEMP-WORKER|temporary worker))(?=.*(?:C-01|connectivity))(?=.*simulated)(?=.*(?:not.*rank|no ranking|preserv))'
 
   - name: prompt-dt-method-05-concepts-conformance
-    prompt: |
-      Invoke the `dt-method-05-concepts` prompt with minimal arguments and explain how it
-      coordinates the workflow.
+    turns:
+      - |
+        Follow the staged `dt-method-05-concepts` prompt for
+        project-slug=synthetic-shift-handoff. Resume the staged Method 5 state
+        and assess initial_selection. Identify the smallest clarification
+        needed before concept articulation and ask for it. Do not write
+        concepts.yml or stakeholder-alignment.md before I answer.
+      - |
+        Select TH-01 with the clarified constraint, evidence, purpose, and
+        validation-target identifiers already staged. Write a schema-valid
+        project-scoped concepts.yml with only name, description, file, and
+        prompt fields per concept. Record TH-01, C-01, C-02, PURPOSE-01, and
+        VT-01 lineage in stakeholder-alignment.md without inventing evidence.
+        Before finishing, reopen concepts.yml and correct it so `concepts` is
+        its only top-level key and every concept has exactly those four fields;
+        do not place theme, constraint, purpose, validation-target, or lineage
+        fields anywhere in concepts.yml.
+    agent_environment:
+      skills:
+        - ../../.github/skills/design-thinking/dt-coaching-foundation
+        - ../../.github/skills/design-thinking/dt-methods
+      files:
+        - src: ../../.github/agents/design-thinking/dt-coach.agent.md
+          dest: .github/copilot-instructions.md
+        - src: ../../.github/prompts/design-thinking/dt-method-05-concepts.prompt.md
+          dest: .github/prompts/design-thinking/dt-method-05-concepts.prompt.md
+        - src: fixtures/dt-method-evidence/method-05-concepts.txt
+          dest: .copilot-tracking/dt/synthetic-shift-handoff/coaching-state.md
     tags:
       category: behavior-conformance
       prompt: dt-method-05-concepts
       advisory: "true"
     graders:
-      - type: output-matches
-        name: agent-attribution
+      - type: transcript-matches
+        name: ambiguous-theme-clarification-requested
+        turn: 0
         config:
-          pattern: "(?i)DT\\s+coach|method\\s*5|concept"
-      - type: output-matches
-        name: scope-language
+          pattern: '(?is)(?=.*(?:ambiguous|missing|clarif))(?=.*(?:theme|TH-01|theme_id))(?=.*\?)'
+      - type: diff-empty
+        name: no-concept-write-before-clarification
+        turn: 0
+      - type: file-matches
+        name: concept-yaml-has-required-schema
         config:
-          pattern: "(?i)concept|articulate|three\\s*lens|DFV"
+          path: .copilot-tracking/dt/synthetic-shift-handoff/**/concepts.yml
+          pattern: '(?is)(?=.*concepts:)(?=.*name:)(?=.*description:)(?=.*file:)(?=.*prompt:)'
+      - type: file-not-matches
+        name: concept-yaml-has-no-lineage-extension-fields
+        config:
+          path: .copilot-tracking/dt/synthetic-shift-handoff/**/concepts.yml
+          pattern: '(?im)^\s+(theme_id|constraint_ids|purpose_id|validation_target_id):'
+      - type: file-matches
+        name: concept-lineage-recorded-separately
+        config:
+          path: .copilot-tracking/dt/synthetic-shift-handoff/**/stakeholder-alignment.md
+          pattern: '(?is)(?=.*TH-01)(?=.*C-01)(?=.*C-02)(?=.*PURPOSE-01)(?=.*VT-01)'
 
   - name: prompt-dt-method-05-evaluation-conformance
     prompt: |
-      Invoke the `dt-method-05-evaluation` prompt with minimal arguments and explain how it
-      coordinates the workflow.
+      Follow the staged `dt-method-05-evaluation` prompt for
+      project-slug=synthetic-shift-handoff. Resume the staged Method 5 state
+      and evaluate the fictional concept evidence across desirability,
+      feasibility, and viability. Keep role-played perspectives labeled
+      simulated, keep SG-TEMP-WORKER unknown, retain the lens conflict, leave
+      selection unresolved, and write stakeholder-alignment.md without
+      claiming consensus, representation, fairness, or validation.
+    agent_environment:
+      skills:
+        - ../../.github/skills/design-thinking/dt-coaching-foundation
+        - ../../.github/skills/design-thinking/dt-methods
+      files:
+        - src: ../../.github/agents/design-thinking/dt-coach.agent.md
+          dest: .github/copilot-instructions.md
+        - src: ../../.github/prompts/design-thinking/dt-method-05-evaluation.prompt.md
+          dest: .github/prompts/design-thinking/dt-method-05-evaluation.prompt.md
+        - src: fixtures/dt-method-evidence/method-05-concepts.txt
+          dest: .copilot-tracking/dt/synthetic-shift-handoff/coaching-state.md
     tags:
       category: behavior-conformance
       prompt: dt-method-05-evaluation
       advisory: "true"
     graders:
       - type: output-matches
-        name: agent-attribution
+        name: evaluation-remains-unresolved
         config:
-          pattern: "(?i)DT\\s+coach|method\\s*5|concept|dt-method-05-evaluation"
-      - type: output-matches
-        name: scope-language
+          pattern: '(?is)(?=.*(?:unresolved|cannot select|insufficient))(?=.*(?:simulated|role-play))(?=.*(?:unknown|absent))'
+      - type: file-matches
+        name: evaluation-preserves-lenses-and-provenance
         config:
-          pattern: "(?i)evaluation|D/F/V|desirab|feasib|viab"
+          path: .copilot-tracking/dt/synthetic-shift-handoff/**/stakeholder-alignment.md
+          pattern: '(?is)(?=.*desirability)(?=.*feasibility)(?=.*viability)(?=.*simulated)(?=.*unknown)(?=.*conflict)(?=.*unresolved)'
+      - type: file-matches
+        name: absent-stakeholder-remains-visible
+        config:
+          path: .copilot-tracking/dt/synthetic-shift-handoff/**/stakeholder-alignment.md
+          pattern: '(?is)(?=.*SG-TEMP-WORKER|temporary worker)(?=.*(?:absent|unknown))'
 
   - name: prompt-dt-method-06-building-conformance
     prompt: |
-      Invoke the `dt-method-06-building` prompt with minimal arguments and explain how it
-      coordinates the workflow.
+      Follow the staged `dt-method-06-building` prompt for
+      project-slug=synthetic-shift-handoff. Resume the staged Method 6 state
+      and handle PR-01 through PR-03 without invoking a model or external
+      destination. Preserve PV-01 through PV-03 as rough competing artifacts,
+      keep one assumption identifier per variation, record the fidelity
+      boundary, and do not claim validation.
+    agent_environment:
+      skills:
+        - ../../.github/skills/design-thinking/dt-coaching-foundation
+        - ../../.github/skills/design-thinking/dt-methods
+      files:
+        - src: ../../.github/agents/design-thinking/dt-coach.agent.md
+          dest: .github/copilot-instructions.md
+        - src: ../../.github/prompts/design-thinking/dt-method-06-building.prompt.md
+          dest: .github/prompts/design-thinking/dt-method-06-building.prompt.md
+        - src: fixtures/dt-method-evidence/method-06-prototypes.txt
+          dest: .copilot-tracking/dt/synthetic-shift-handoff/coaching-state.md
     tags:
       category: behavior-conformance
       prompt: dt-method-06-building
       advisory: "true"
     graders:
-      - type: output-matches
-        name: agent-attribution
+      - type: file-matches
+        name: fidelity-and-execution-boundaries-reported
         config:
-          pattern: "(?i)DT\\s+coach|method\\s*6|prototype|dt-method-06-building"
-      - type: output-matches
-        name: scope-language
+          path: .copilot-tracking/dt/synthetic-shift-handoff/coaching-state.md
+          pattern: '(?is)(?=.*(?:handled|declined|redirect))(?=.*(?:rough|low[- ]fidelity|scrappy))(?=.*(?:one assumption|single assumption|single-assumption|A-01|A-02))(?=.*(?:not invoke|no[- ]model|without.*model|model_invoked:\s*false|Method 7))'
+      - type: file-matches
+        name: prototype-variations-preserve-alternatives
         config:
-          pattern: "(?i)prototype|lo[-\\s]*fi|scrappy|build"
+          path: .copilot-tracking/dt/synthetic-shift-handoff/coaching-state.md
+          pattern: '(?is)(?=.*(?:handled|declined|redirect))(?=.*PR-01)(?=.*PR-02)(?=.*PR-03)(?=.*PV-01)(?=.*PV-02)(?=.*PV-03)(?=.*A-01)(?=.*A-02)(?=.*rough)(?=.*(?:not validated|not_validated))'
+      - type: tool-calls
+        name: no-model-or-destination-call
+        config:
+          disallowed:
+            - name: '(?i)(openai|azure|model|mural|figma)'
+      - type: file-not-exists
+        name: no-model-sandbox-created
+        config:
+          path: .copilot-tracking/sandbox/synthetic-shift-handoff
 
   - name: prompt-dt-method-06-planning-conformance
-    prompt: |
-      Invoke the `dt-method-06-planning` prompt with minimal arguments and explain how it
-      coordinates the workflow.
+    turns:
+      - |
+        Follow the staged `dt-method-06-planning` prompt for
+        project-slug=synthetic-shift-handoff. Resume the staged Method 6 state
+        and assess initial_selection. Ask for the missing concept identity and
+        lineage before writing prototype-plan.md. Do not write a planning
+        artifact until I answer.
+      - |
+        Select CONCEPT-01 with its staged lineage. Write prototype-plan.md with
+        A-01 and A-02, PV-01 through PV-03, the temporary-worker and stressed-
+        user gaps, the environment mismatch, and a documented selection
+        rationale. Keep the plan explicitly not validated.
+    agent_environment:
+      skills:
+        - ../../.github/skills/design-thinking/dt-coaching-foundation
+        - ../../.github/skills/design-thinking/dt-methods
+      files:
+        - src: ../../.github/agents/design-thinking/dt-coach.agent.md
+          dest: .github/copilot-instructions.md
+        - src: ../../.github/prompts/design-thinking/dt-method-06-planning.prompt.md
+          dest: .github/prompts/design-thinking/dt-method-06-planning.prompt.md
+        - src: fixtures/dt-method-evidence/method-06-prototypes.txt
+          dest: .copilot-tracking/dt/synthetic-shift-handoff/coaching-state.md
     tags:
       category: behavior-conformance
       prompt: dt-method-06-planning
       advisory: "true"
     graders:
-      - type: output-matches
-        name: agent-attribution
+      - type: transcript-matches
+        name: missing-concept-clarification-requested
+        turn: 0
         config:
-          pattern: "(?i)DT\\s+coach|method\\s*6|prototype|dt-method-06-planning"
-      - type: output-matches
-        name: scope-language
+          pattern: '(?is)(?=.*(?:missing|incomplete|clarif))(?=.*(?:concept|CONCEPT-01|lineage))(?=.*\?)'
+      - type: diff-empty
+        name: no-prototype-plan-before-clarification
+        turn: 0
+      - type: file-matches
+        name: prototype-plan-preserves-lineage-and-alternatives
         config:
-          pattern: "(?i)prototype|plan|feedback|hypothesis"
+          path: .copilot-tracking/dt/synthetic-shift-handoff/**/*prototype-plan.md
+          pattern: '(?is)(?=.*CONCEPT-01)(?=.*A-01)(?=.*A-02)(?=.*PV-01)(?=.*PV-02)(?=.*PV-03)(?=.*rationale)'
+      - type: file-matches
+        name: prototype-plan-retains-coverage-gaps
+        config:
+          path: .copilot-tracking/dt/synthetic-shift-handoff/**/*prototype-plan.md
+          pattern: '(?is)(?=.*(?:temporary worker|temporary-worker))(?=.*(?:stressed user|stressed-user))(?=.*(?:environment|connectivity))(?=.*(?:unknown|conflict|gap))(?=.*(?:not validated|not_validated))'
 
   - name: prompt-dt-method-06-testing-conformance
     prompt: |
-      Invoke the `dt-method-06-testing` prompt with minimal arguments and explain how it
-      coordinates the workflow.
+      Follow the staged `dt-method-06-testing` prompt for
+      project-slug=synthetic-shift-handoff. Resume the staged Method 6 state,
+      preserve participant and environment gaps, keep OP-01 as opinion only,
+      and write feedback-plan.md plus test-observations.md from the supplied
+      fictional records. Preserve all observation fields and inconclusive
+      statuses. Do not claim real users, representative coverage, fairness,
+      validation, success, or Method 7 readiness.
+    agent_environment:
+      skills:
+        - ../../.github/skills/design-thinking/dt-coaching-foundation
+        - ../../.github/skills/design-thinking/dt-methods
+      files:
+        - src: ../../.github/agents/design-thinking/dt-coach.agent.md
+          dest: .github/copilot-instructions.md
+        - src: ../../.github/prompts/design-thinking/dt-method-06-testing.prompt.md
+          dest: .github/prompts/design-thinking/dt-method-06-testing.prompt.md
+        - src: fixtures/dt-method-evidence/method-06-feedback.txt
+          dest: .copilot-tracking/dt/synthetic-shift-handoff/coaching-state.md
     tags:
       category: behavior-conformance
       prompt: dt-method-06-testing
       advisory: "true"
     graders:
-      - type: output-matches
-        name: agent-attribution
+      - type: file-matches
+        name: feedback-plan-retains-participant-and-environment-gaps
         config:
-          pattern: "(?i)DT\\s+coach|method\\s*6|prototype|dt-method-06-testing"
-      - type: output-matches
-        name: scope-language
+          path: .copilot-tracking/dt/synthetic-shift-handoff/**/feedback-plan.md
+          pattern: '(?is)(?=.*FP-01)(?=.*(?:temporary worker|temporary-worker))(?=.*(?:stressed user|stressed-user))(?=.*(?:quiet-connected-office))(?=.*(?:intermittent-connectivity-maintenance-area))(?=.*(?:unknown|conflict|gap))'
+      - type: file-matches
+        name: feedback-plan-records-evidence-ceiling
         config:
-          pattern: "(?i)test|feedback|user|prototype"
+          path: .copilot-tracking/dt/synthetic-shift-handoff/**/feedback-plan.md
+          pattern: '(?is)(?=.*fictional)(?=.*(?:does not|no claim|none of))(?=.*representative)(?=.*fair)(?=.*(?:validat|validation))(?=.*Method 7)'
+      - type: file-matches
+        name: observations-preserve-fields-and-inconclusive-status
+        config:
+          path: .copilot-tracking/dt/synthetic-shift-handoff/**/test-observations.md
+          pattern: '(?is)(?=.*OBS-01)(?=.*hypothesis)(?=.*prototype)(?=.*participant)(?=.*environment)(?=.*observed behavior)(?=.*constraint)(?=.*severity)(?=.*assumption status)(?=.*inconclusive)(?=.*fictional)'
+      - type: file-matches
+        name: opinion-input-remains-distinct
+        config:
+          path: .copilot-tracking/dt/synthetic-shift-handoff/**/feedback-plan.md
+          pattern: '(?is)(?=.*OP-01)(?=.*opinion)(?=.*(?:not.*behavior|not behavioral|opinion only|opinion_only))'
 
   - name: prompt-dt-method-next-conformance
     turns:
