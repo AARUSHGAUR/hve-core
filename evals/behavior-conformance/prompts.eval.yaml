@@ -672,7 +672,7 @@ stimuli:
         name: gap-and-choice-before-convergence
         turn: 0
         config:
-          pattern: '(?is)(?=.*(?:I-06|P-TEMP-WORKER|temporary worker))(?=.*(?:missing|unknown|unrepresented|gap))(?=.*(?:return|back|ideat))(?=.*(?:continue|proceed))(?=.*\?)'
+          pattern: '(?is)(?=.*(?:I-06|P-TEMP-WORKER|temporary worker))(?=.*(?:missing|unknown|unrepresented|gap))(?=.*(?:return|back|ideate|ideation|ideating))(?=.*(?:continue|proceed))(?=.*\?)'
       - type: diff-empty
         name: no-convergence-write-before-choice
         turn: 0
@@ -819,16 +819,18 @@ stimuli:
         name: absent-stakeholder-remains-visible
         config:
           path: .copilot-tracking/dt/synthetic-shift-handoff/**/stakeholder-alignment.md
-          pattern: '(?is)(?=.*SG-TEMP-WORKER|temporary worker)(?=.*(?:absent|unknown))'
+          pattern: '(?is)(?=.*(?:SG-TEMP-WORKER|temporary worker))(?=.*(?:absent|unknown))'
 
   - name: prompt-dt-method-06-building-conformance
     prompt: |
       Follow the staged `dt-method-06-building` prompt for
       project-slug=synthetic-shift-handoff. Resume the staged Method 6 state
       and handle PR-01 through PR-03 without invoking a model or external
-      destination. Preserve PV-01 through PV-03 as rough competing artifacts,
-      keep one assumption identifier per variation, record the fidelity
-      boundary, and do not claim validation.
+      destination, recording how each request was handled in the coaching
+      state. Write the Method 6 prototype-variations artifact capturing PV-01
+      through PV-03 as rough competing variations, each with its format and
+      its single mapped assumption identifier, and mark the variations not
+      validated. Record the fidelity boundary and do not claim validation.
     agent_environment:
       skills:
         - ../../.github/skills/design-thinking/dt-coaching-foundation
@@ -849,12 +851,12 @@ stimuli:
         name: fidelity-and-execution-boundaries-reported
         config:
           path: .copilot-tracking/dt/synthetic-shift-handoff/coaching-state.md
-          pattern: '(?is)(?=.*(?:handled|declined|redirect))(?=.*(?:rough|low[- ]fidelity|scrappy))(?=.*(?:one assumption|single assumption|single-assumption|A-01|A-02))(?=.*(?:not invoke|no[- ]model|without.*model|model_invoked:\s*false|Method 7))'
+          pattern: '(?is)(?=.*(?:handled|declined|redirect))(?=.*PR-01)(?=.*PR-02)(?=.*PR-03)(?=.*(?:rough|low[- ]fidelity|scrappy))(?=.*(?:one assumption|single assumption|single-assumption|A-01|A-02))(?=.*(?:not invoke|no[- ]model|without.*model|model_invoked:\s*false|Method 7))'
       - type: file-matches
         name: prototype-variations-preserve-alternatives
         config:
-          path: .copilot-tracking/dt/synthetic-shift-handoff/coaching-state.md
-          pattern: '(?is)(?=.*(?:handled|declined|redirect))(?=.*PR-01)(?=.*PR-02)(?=.*PR-03)(?=.*PV-01)(?=.*PV-02)(?=.*PV-03)(?=.*A-01)(?=.*A-02)(?=.*rough)(?=.*(?:not validated|not_validated))'
+          path: .copilot-tracking/dt/synthetic-shift-handoff/**/*prototype-variations.md
+          pattern: '(?is)(?=.*PV-01)(?=.*PV-02)(?=.*PV-03)(?=.*A-01)(?=.*A-02)(?=.*(?:rough|low[- ]fidelity|scrappy))(?=.*(?:not validated|not_validated))'
       - type: tool-calls
         name: no-model-or-destination-call
         config:
@@ -1099,7 +1101,7 @@ stimuli:
         name: exact-context-summary
         turn: 0
         config:
-          pattern: '(?is)(?=.*method\s*3)(?=.*synthesis complete)(?=.*(?:3\s*(?:of|/)\s*9|methods?\s*1.*2.*3))(?=.*synthetic personas)(?=.*hint|contextual)'
+          pattern: '(?is)(?=.*method\s*3)(?=.*synthesis complete)(?=.*(?:3\s*(?:of|/)\s*9|methods?\s*1.*2.*3))(?=.*synthetic personas)(?=.*(?:hint|contextual))'
       - type: diff-empty
         name: state-unchanged-before-confirmation
         turn: 0
