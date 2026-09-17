@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Microsoft Corporation. All rights reserved.
 // SPDX-License-Identifier: MIT
 import { execFileSync } from 'node:child_process';
-import { closeSync, ftruncateSync, mkdirSync, openSync, readdirSync, readFileSync, writeFileSync, writeSync } from 'node:fs';
+import { closeSync, constants, ftruncateSync, mkdirSync, openSync, readdirSync, readFileSync, writeFileSync, writeSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -127,24 +127,12 @@ export function writeGraphicsReviewTemplate(outputPath, content, check = false) 
   let fileHandle;
   try {
     try {
-      fileHandle = openSync(outputPath, 'r+');
+      fileHandle = openSync(outputPath, check ? constants.O_RDONLY : constants.O_RDWR | constants.O_CREAT);
     } catch (error) {
-      if (error?.code !== 'ENOENT') {
-        throw error;
-      }
-      if (check) {
+      if (check && error?.code === 'ENOENT') {
         throw new Error(`Mermaid graphics review template not found: ${outputPath}`);
       }
-      try {
-        fileHandle = openSync(outputPath, 'wx');
-        writeFileSync(fileHandle, content, 'utf8');
-        return 'Wrote';
-      } catch (createError) {
-        if (createError?.code !== 'EEXIST') {
-          throw createError;
-        }
-        fileHandle = openSync(outputPath, 'r+');
-      }
+      throw error;
     }
 
     const existing = readFileSync(fileHandle, 'utf8').replaceAll('\r\n', '\n');
