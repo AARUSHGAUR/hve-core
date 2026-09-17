@@ -1,3 +1,4 @@
+# cspell:ignore declin initializ reinitializ
 name: behavior-conformance-prompts
 description: >
   Advisory-tier behavior conformance evals for high-traffic prompts. Each
