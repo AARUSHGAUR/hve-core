@@ -423,6 +423,7 @@ Describe 'Test-EquivalenceStimulusSync' -Tag 'Unit' {
 
         It 'Reports but does not gate on <Grader>' -ForEach @(
             @{ Grader = 'ambiguous-spec-vague-feature-asks-clarifying-question'; Reason = 'interaction-style preference of the underlying model' }
+            @{ Grader = 'hello-world-syntax'; Reason = 'valid code-rendering choice of the underlying model' }
             @{ Grader = 'mentions-print-paren'; Reason = 'illustration choice that differs by model' }
         ) {
             $script:DeclaredGraders.Contains($Grader) | Should -BeTrue -Because "$Grader must keep running so $Reason stays visible in the run results"

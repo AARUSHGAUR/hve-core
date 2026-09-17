@@ -98,7 +98,8 @@ stimuli:
     constraints: *agent-time-limit
     category: code-qa
     prompt: "Write a hello world program in Python."
-    invariants: [hello-world-syntax]
+    # hello-world-syntax reports but does not gate. It records which valid rendering
+    # the baseline model chose and cannot evidence an effect from customization.
     tags: {category: baseline-equivalence, subcategory: code-qa, agent: [rpi-agent], policy: equivalent}
     graders:
       - type: output-matches
