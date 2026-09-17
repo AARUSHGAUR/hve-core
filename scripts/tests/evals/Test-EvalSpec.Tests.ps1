@@ -99,6 +99,46 @@ Describe 'Test-EvalSpecCompliance (module)' -Tag 'Unit' {
             $errors = Test-EvalSpecCompliance -Spec $spec -SpecPath $relPath -RepoRoot $script:RepoRoot
             @($errors | Where-Object { $_.field -like 'environment.*' -and $_.message -like '*does not resolve*' }).Count | Should -BeGreaterOrEqual 2
         }
+
+        It 'Flags a duplicate grader name across stimuli and identifies the first declaration' {
+            $spec = @{
+                name     = 'duplicate-graders'
+                defaults = @{ executor = 'copilot-sdk' }
+                stimuli  = @(
+                    @{
+                        name    = 'first-stimulus'
+                        prompt  = 'first prompt'
+                        graders = @(@{ type = 'noop'; name = 'shared-grader' })
+                    },
+                    @{
+                        name    = 'second-stimulus'
+                        prompt  = 'second prompt'
+                        graders = @(@{ type = 'noop'; name = 'shared-grader' })
+                    }
+                )
+            }
+
+            $errors = Test-EvalSpecCompliance -Spec $spec -SpecPath 'inline.yaml' -RepoRoot $script:RepoRoot
+            $duplicate = @($errors | Where-Object { $_.field -eq 'stimuli[1] (second-stimulus).graders[0].name' })
+
+            $duplicate | Should -HaveCount 1
+            $duplicate[0].message | Should -BeExactly "Duplicate grader name 'shared-grader'; first declared in stimulus 'first-stimulus'"
+        }
+
+        It 'Allows a repeated judge name in the canonical comparison spec contract' {
+            $spec = @{
+                name     = 'comparison-contract'
+                defaults = @{ executor = 'copilot-sdk' }
+                stimuli  = @(
+                    @{ name = 'first'; prompt = 'first'; graders = @(@{ type = 'prompt'; name = 'equivalence-judgement' }) },
+                    @{ name = 'second'; prompt = 'second'; graders = @(@{ type = 'prompt'; name = 'equivalence-judgement' }) }
+                )
+            }
+
+            $errors = Test-EvalSpecCompliance -Spec $spec -SpecPath 'evals/baseline-equivalence/compare.eval.yml' -RepoRoot $script:RepoRoot
+
+            @($errors | Where-Object { $_.message -like 'Duplicate grader name*' }) | Should -HaveCount 0
+        }
     }
 
     Context 'Optional moderation block' {
