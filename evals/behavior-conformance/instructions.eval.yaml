@@ -69,7 +69,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-docusaurus-edits-conformance-applyTo-evidence
+        name: instruction-docusaurus-edits-conformance-applyto-evidence
         config:
           pattern: "(?i)\\bdocs/\\b|^docs/|docs\\s*/"
       - type: output-matches
@@ -89,7 +89,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-dt-coach-telemetry-conformance-applyTo-evidence
+        name: instruction-dt-coach-telemetry-conformance-applyto-evidence
         config:
           pattern: "(?i)dt-coach-telemetry\\.instructions\\.md|\\.copilot-tracking/dt/"
       - type: output-matches
@@ -110,7 +110,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-experiment-designer-conformance-applyTo-evidence
+        name: instruction-experiment-designer-conformance-applyto-evidence
         config:
           pattern: "(?i)\\.copilot-tracking/mve|/mve/"
       - type: output-matches
@@ -173,7 +173,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-backlog-guardrails-conformance-applyTo-evidence
+        name: instruction-backlog-guardrails-conformance-applyto-evidence
         config:
           pattern: "(?i)backlog-guardrails\\.instructions\\.md|project-planning/backlog-guardrails"
       - type: output-matches
@@ -197,7 +197,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-markdown-conformance-applyTo-evidence
+        name: instruction-markdown-conformance-applyto-evidence
         config:
           pattern: "(?i)\\*\\*/\\*\\.md|\\.md\\b|all\\s+markdown\\s+files"
       - type: output-matches
@@ -218,7 +218,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-hve-builder-conformance-applyTo-evidence
+        name: instruction-hve-builder-conformance-applyto-evidence
         config:
           pattern: "(?i)\\.agent\\.md|\\.instructions\\.md|\\.prompt\\.md|SKILL\\.md"
       - type: output-matches
@@ -238,7 +238,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-copilot-tracking-conformance-applyTo-evidence
+        name: instruction-copilot-tracking-conformance-applyto-evidence
         config:
           pattern: "(?i)\\.copilot-tracking/(research|plans|details|changes|reviews|sandbox|prompts)"
       - type: output-matches
@@ -259,7 +259,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-pull-request-conformance-applyTo-evidence
+        name: instruction-pull-request-conformance-applyto-evidence
         config:
           pattern: "(?i)\\.copilot-tracking/pr/|/pr/"
       - type: output-matches
@@ -280,7 +280,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-writing-style-conformance-applyTo-evidence
+        name: instruction-writing-style-conformance-applyto-evidence
         config:
           pattern: "(?i)\\*\\*/\\*\\.md|\\.md\\b|markdown\\s+content"
       - type: output-matches
@@ -301,7 +301,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-rai-identity-conformance-applyTo-evidence
+        name: instruction-rai-identity-conformance-applyto-evidence
         config:
           pattern: "(?i)\\.copilot-tracking/rai-plans|rai-plans/"
       - type: output-matches
@@ -343,7 +343,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-rai-license-posture-conformance-applyTo-evidence
+        name: instruction-rai-license-posture-conformance-applyto-evidence
         config:
           pattern: "(?i)skills/rai|\\.copilot-tracking/rai-plans|rai-plans/"
       - type: output-matches
@@ -387,7 +387,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-backlog-handoff-conformance-applyTo-evidence
+        name: instruction-backlog-handoff-conformance-applyto-evidence
         config:
           pattern: "(?i)\\.copilot-tracking/security-plans|security-plans/"
       - type: output-matches
@@ -407,7 +407,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-sssc-assessment-conformance-applyTo-evidence
+        name: instruction-sssc-assessment-conformance-applyto-evidence
         config:
           pattern: "(?i)\\.copilot-tracking/sssc-plans|sssc-plans/"
       - type: output-matches
@@ -428,7 +428,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-disclaimer-language-conformance-applyTo-evidence
+        name: instruction-disclaimer-language-conformance-applyto-evidence
         config:
           pattern: "(?i)\\.copilot-tracking/(rai-plans|security-plans|sssc-plans)"
       - type: output-matches
@@ -449,7 +449,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-powershell-script-conformance-applyTo-evidence
+        name: instruction-powershell-script-conformance-applyto-evidence
         config:
           pattern: "(?i)\\*\\.ps1|\\*\\.psm1|\\*\\.psd1|powershell\\.instructions\\.md"
       - type: output-matches
@@ -470,7 +470,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-powershell-module-conformance-applyTo-evidence
+        name: instruction-powershell-module-conformance-applyto-evidence
         config:
           pattern: "(?i)\\*\\.psm1|\\*\\.ps1|powershell\\.instructions\\.md"
       - type: output-matches
@@ -490,7 +490,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-powershell-data-file-conformance-applyT-fd724682
+        name: instruction-powershell-data-file-conformance-applyt-1c5f7350
         config:
           pattern: "(?i)\\*\\.psd1|\\*\\.psm1|\\*\\.ps1|powershell\\.instructions\\.md"
       - type: output-matches
@@ -555,7 +555,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-pester-tests-conformance-applyTo-evidence
+        name: instruction-pester-tests-conformance-applyto-evidence
         config:
           pattern: "(?i)\\*\\.Tests\\.ps1|pester\\.instructions\\.md"
       - type: output-matches
@@ -576,7 +576,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-python-script-cli-conformance-applyTo-evidence
+        name: instruction-python-script-cli-conformance-applyto-evidence
         config:
           pattern: "(?i)\\*\\.py|python-script\\.instructions\\.md"
       - type: output-matches
@@ -638,7 +638,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-python-tests-pytest-conformance-applyTo-evidence
+        name: instruction-python-tests-pytest-conformance-applyto-evidence
         config:
           pattern: "(?i)\\*\\.py|python-tests\\.instructions\\.md"
       - type: output-matches
@@ -659,7 +659,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-python-uv-projects-conformance-applyTo-evidence
+        name: instruction-python-uv-projects-conformance-applyto-evidence
         config:
           pattern: "(?i)\\*\\.py|\\*\\.ipynb|uv-projects\\.instructions\\.md"
       - type: output-matches
@@ -680,7 +680,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-rust-cargo-conformance-applyTo-evidence
+        name: instruction-rust-cargo-conformance-applyto-evidence
         config:
           pattern: "(?i)\\*\\.rs|rust\\.instructions\\.md"
       - type: output-matches
@@ -701,7 +701,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-rust-error-handling-conformance-applyTo-evidence
+        name: instruction-rust-error-handling-conformance-applyto-evidence
         config:
           pattern: "(?i)\\*\\.rs|rust\\.instructions\\.md"
       - type: output-matches
@@ -723,7 +723,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-rust-naming-conformance-applyTo-evidence
+        name: instruction-rust-naming-conformance-applyto-evidence
         config:
           pattern: "(?i)\\*\\.rs|rust\\.instructions\\.md"
       - type: output-matches
@@ -744,7 +744,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-rust-async-conformance-applyTo-evidence
+        name: instruction-rust-async-conformance-applyto-evidence
         config:
           pattern: "(?i)\\*\\.rs|rust\\.instructions\\.md"
       - type: output-matches
@@ -766,7 +766,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-rust-tests-conformance-applyTo-evidence
+        name: instruction-rust-tests-conformance-applyto-evidence
         config:
           pattern: "(?i)\\*\\.rs|rust-tests\\.instructions\\.md"
       - type: output-matches
@@ -833,7 +833,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-bash-naming-conformance-applyTo-evidence
+        name: instruction-bash-naming-conformance-applyto-evidence
         config:
           pattern: "(?i)\\*\\.sh|bash\\.instructions\\.md"
       - type: output-matches
@@ -854,7 +854,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-bash-error-handling-conformance-applyTo-evidence
+        name: instruction-bash-error-handling-conformance-applyto-evidence
         config:
           pattern: "(?i)\\*\\.sh|bash\\.instructions\\.md"
       - type: output-matches
@@ -875,7 +875,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-terraform-naming-conformance-applyTo-evidence
+        name: instruction-terraform-naming-conformance-applyto-evidence
         config:
           pattern: "(?i)\\*\\.tf|terraform\\.instructions\\.md|terraform/"
       - type: output-matches
@@ -937,7 +937,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-pptx-conformance-applyTo-evidence
+        name: instruction-pptx-conformance-applyto-evidence
         config:
           pattern: "(?i)\\.copilot-tracking/ppt/|/ppt/|pptx\\.instructions\\.md"
       - type: output-matches
@@ -959,7 +959,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-coaching-patterns-conformance-applyTo-evidence
+        name: instruction-coaching-patterns-conformance-applyto-evidence
         config:
           pattern: "(?i)coaching-patterns\\.instructions\\.md|\\.copilot-tracking/.*-plans"
       - type: output-matches
@@ -979,7 +979,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-privacy-identity-conformance-applyTo-evidence
+        name: instruction-privacy-identity-conformance-applyto-evidence
         config:
           pattern: "(?i)\\.copilot-tracking/privacy-plans|privacy-identity\\.instructions\\.md"
       - type: output-matches
@@ -1021,7 +1021,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-telemetry-overlay-conformance-applyTo-evidence
+        name: instruction-telemetry-overlay-conformance-applyto-evidence
         config:
           pattern: "(?i)telemetry-overlay\\.instructions\\.md|\\.copilot-tracking/.*-plans"
       - type: output-matches
@@ -1378,7 +1378,7 @@ stimuli:
       advisory: "true"
     graders:
       - type: output-matches
-        name: instruction-licensing-posture-conformance-applyTo-evidence
+        name: instruction-licensing-posture-conformance-applyto-evidence
         config:
           pattern: '(?i)(\*\*/skills/\*\*|\.github/skills/|\.copilot-tracking/)'
       - type: output-matches

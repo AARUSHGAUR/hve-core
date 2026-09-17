@@ -125,6 +125,36 @@ Describe 'Test-EvalSpecCompliance (module)' -Tag 'Unit' {
             $duplicate[0].message | Should -BeExactly "Duplicate grader name 'shared-grader'; first declared in stimulus 'first-stimulus'"
         }
 
+        It "Flags grader names outside Vally's lexical contract" {
+            $spec = @{
+                name     = 'invalid-grader-names'
+                defaults = @{ executor = 'copilot-sdk' }
+                stimuli  = @(
+                    @{
+                        name    = 'invalid-names'
+                        prompt  = 'test prompt'
+                        graders = @(
+                            @{ type = 'noop'; name = 'grader-applyTo-evidence' },
+                            @{ type = 'noop'; name = 'grader_name' },
+                            @{ type = 'noop'; name = '-leading-hyphen' },
+                            @{ type = 'noop'; name = ('a' * 61) }
+                        )
+                    }
+                )
+            }
+
+            $errors = Test-EvalSpecCompliance -Spec $spec -SpecPath 'inline.yaml' -RepoRoot $script:RepoRoot
+            $invalidNames = @($errors | Where-Object { $_.message -like 'Invalid grader name*' })
+
+            $invalidNames | Should -HaveCount 4
+            @($invalidNames.field) | Should -Be @(
+                'stimuli[0] (invalid-names).graders[0].name',
+                'stimuli[0] (invalid-names).graders[1].name',
+                'stimuli[0] (invalid-names).graders[2].name',
+                'stimuli[0] (invalid-names).graders[3].name'
+            )
+        }
+
         It 'Allows a repeated judge name in the canonical comparison spec contract' {
             $spec = @{
                 name     = 'comparison-contract'

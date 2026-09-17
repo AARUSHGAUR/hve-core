@@ -275,6 +275,13 @@ function Test-EvalSpecCompliance {
                 if ([string]::IsNullOrWhiteSpace($graderName)) {
                     continue
                 }
+                if ($graderName -cnotmatch '^[a-z0-9][a-z0-9-]{0,59}$') {
+                    $errors.Add(@{
+                            path    = $SpecPath
+                            field   = "$stimulusLabel.graders[$graderIndex].name"
+                            message = "Invalid grader name '$graderName'; names must contain only lowercase letters, digits, and hyphens, start with a letter or digit, and contain at most 60 characters"
+                        })
+                }
                 if (-not $isComparisonSpec -and $seenGraderNames.ContainsKey($graderName)) {
                     $errors.Add(@{
                             path    = $SpecPath
