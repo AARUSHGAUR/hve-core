@@ -10,7 +10,7 @@ import { ALLOWLISTED_NAVIGATE_VALUES, ALLOWLISTED_PERFORM_VALUES, validateScreen
 
 const DRIVER_DIR = path.dirname(fileURLToPath(import.meta.url));
 const GUIDEPUP_MODULE = path.resolve(DRIVER_DIR, '../../node_modules/@guidepup/guidepup');
-const GUIDEPUP_PACKAGE_PATH = path.join(GUIDEPUP_MODULE, 'package.json');
+const RUNTIME_PACKAGE_PATH = path.resolve(DRIVER_DIR, '../../package.json');
 const PROFILE_ID = 'guidepup-nvda-isolated-v1';
 const APPROVED_NVDA_SETTINGS = Object.freeze({
   general: {
@@ -47,7 +47,7 @@ function selectDriver(platform) {
 
 function readGuidepupLibraryVersion() {
   try {
-    return JSON.parse(readFileSync(GUIDEPUP_PACKAGE_PATH, 'utf8'))?.version || null;
+    return JSON.parse(readFileSync(RUNTIME_PACKAGE_PATH, 'utf8'))?.optionalDependencies?.['@guidepup/guidepup'] || null;
   } catch {
     return null;
   }

@@ -14,26 +14,16 @@ BeforeAll {
 }
 
 Describe 'Build-GraderLineageMap.ps1' -Tag 'Unit' {
-    It 'Generates the deterministic revision-bound migration contract' {
-        $first = New-GraderLineageMap -RepoRoot $script:RepoRoot `
-            -SourceProvenanceRevision $script:ProvenanceRevision `
-            -SourceRevision $script:SourceRevision `
-            -TargetRevision $script:TargetRevision
-        $second = New-GraderLineageMap -RepoRoot $script:RepoRoot `
-            -SourceProvenanceRevision $script:ProvenanceRevision `
-            -SourceRevision $script:SourceRevision `
-            -TargetRevision $script:TargetRevision
+    It 'Checks the deterministic revision-bound migration contract without historical Git objects' {
+        $first = Invoke-GraderLineageMap -RepoRoot $script:RepoRoot -Check
+        $second = Invoke-GraderLineageMap -RepoRoot $script:RepoRoot -Check
 
-        $first.counts.sourceToTargetPairs | Should -Be 1240
-        $first.counts.authoredAliases | Should -Be 414
-        $first.counts.generatedCopies | Should -Be 171
-        $first.counts.semanticChanges | Should -Be 0
-        $first.aliases | Should -HaveCount 414
-        $first.mapSha256 | Should -BeExactly $second.mapSha256
-        $first.sourceRevision | Should -BeExactly $script:SourceRevision
-        $first.targetRevision | Should -BeExactly $script:TargetRevision
-        $first.sourceSpecSha256 | Should -Match '^[a-f0-9]{64}$'
-        $first.targetSpecSha256 | Should -Match '^[a-f0-9]{64}$'
+        $first.Outcome | Should -BeExactly 'NoDrift'
+        $first.Counts.sourceToTargetPairs | Should -Be 1240
+        $first.Counts.authoredAliases | Should -Be 414
+        $first.Counts.generatedCopies | Should -Be 171
+        $first.Counts.semanticChanges | Should -Be 0
+        ($second.Counts | ConvertTo-Json -Compress) | Should -BeExactly ($first.Counts | ConvertTo-Json -Compress)
     }
 
     It 'Maps authored grader type <GraderType> to result kind <ExpectedKind>' -ForEach @(

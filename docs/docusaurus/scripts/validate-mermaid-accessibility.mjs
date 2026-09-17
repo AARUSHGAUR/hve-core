@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Microsoft Corporation. All rights reserved.
 // SPDX-License-Identifier: MIT
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { closeSync, ftruncateSync, mkdirSync, openSync, readdirSync, readFileSync, writeFileSync, writeSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -123,8 +123,31 @@ ${tableRows.join('\n')}
 }
 
 export function writeGraphicsReviewTemplate(outputPath, content, check = false) {
-  if (existsSync(outputPath)) {
-    const existing = readFileSync(outputPath, 'utf8').replaceAll('\r\n', '\n');
+  mkdirSync(path.dirname(outputPath), { recursive: true });
+  let fileHandle;
+  try {
+    try {
+      fileHandle = openSync(outputPath, 'r+');
+    } catch (error) {
+      if (error?.code !== 'ENOENT') {
+        throw error;
+      }
+      if (check) {
+        throw new Error(`Mermaid graphics review template not found: ${outputPath}`);
+      }
+      try {
+        fileHandle = openSync(outputPath, 'wx');
+        writeFileSync(fileHandle, content, 'utf8');
+        return 'Wrote';
+      } catch (createError) {
+        if (createError?.code !== 'EEXIST') {
+          throw createError;
+        }
+        fileHandle = openSync(outputPath, 'r+');
+      }
+    }
+
+    const existing = readFileSync(fileHandle, 'utf8').replaceAll('\r\n', '\n');
     if (existing === content) {
       return 'NoDrift';
     }
@@ -134,13 +157,15 @@ export function writeGraphicsReviewTemplate(outputPath, content, check = false) 
     if (check) {
       throw new Error(`Mermaid graphics review template drift detected: ${outputPath}`);
     }
-  } else if (check) {
-    throw new Error(`Mermaid graphics review template not found: ${outputPath}`);
-  }
 
-  mkdirSync(path.dirname(outputPath), { recursive: true });
-  writeFileSync(outputPath, content, 'utf8');
-  return 'Wrote';
+    ftruncateSync(fileHandle, 0);
+    writeSync(fileHandle, content, 0, 'utf8');
+    return 'Wrote';
+  } finally {
+    if (fileHandle !== undefined) {
+      closeSync(fileHandle);
+    }
+  }
 }
 function discoverGeneratedDocuments() {
   return readdirSync(generatedDocsRoot)

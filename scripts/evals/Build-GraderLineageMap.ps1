@@ -391,6 +391,153 @@ function Get-GraderLineageRecords {
     return @($records)
 }
 
+function Get-CurrentGraderLineageRecords {
+    <#
+    .SYNOPSIS
+        Reads grader records from current authored files.
+    .OUTPUTS
+        System.Object[]
+    #>
+    [CmdletBinding()]
+    [OutputType([object[]])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$RepoRoot,
+
+        [Parameter(Mandatory = $true)]
+        [string[]]$Paths
+    )
+
+    $records = [System.Collections.Generic.List[object]]::new()
+    foreach ($path in $Paths) {
+        $fullPath = Join-Path $RepoRoot $path
+        if (-not (Test-Path -LiteralPath $fullPath -PathType Leaf)) {
+            throw "Current lineage input '$path' was not found."
+        }
+        try {
+            $document = ConvertFrom-Yaml -Yaml (Get-Content -Raw -LiteralPath $fullPath) -Ordered
+        }
+        catch {
+            throw "Failed to parse current lineage input '$path': $($_.Exception.Message)"
+        }
+        if ($document -isnot [System.Collections.IDictionary]) {
+            throw "Current lineage input '$path' is not a YAML mapping."
+        }
+
+        $evalName = Get-LineageEvalName -Path $path -Document $document
+        foreach ($stimulus in @($document['stimuli'])) {
+            if ($stimulus -isnot [System.Collections.IDictionary]) {
+                throw "Current lineage input '$path' contains a non-mapping stimulus."
+            }
+            $stimulusName = [string]$stimulus['name']
+            foreach ($grader in @($stimulus['graders'])) {
+                if ($grader -isnot [System.Collections.IDictionary]) {
+                    throw "Current lineage input '$path' stimulus '$stimulusName' contains a non-mapping grader."
+                }
+                $graderType = [string]$grader['type']
+                $name = [string]$grader['name']
+                if ([string]::IsNullOrWhiteSpace($graderType) -or [string]::IsNullOrWhiteSpace($name)) {
+                    throw "Current lineage input '$path' stimulus '$stimulusName' has an incomplete grader."
+                }
+                $records.Add([pscustomobject]@{
+                        EvalName       = $evalName
+                        Source         = $path
+                        Stimulus       = $stimulusName
+                        GraderType     = $graderType
+                        ResultKind     = Get-GraderResultKind -GraderType $graderType
+                        Name           = $name
+                        BehaviorSha256 = Get-GraderBehaviorSha256 -Grader $grader
+                    })
+            }
+        }
+    }
+    return @($records)
+}
+
+function Test-CommittedGraderLineageMap {
+    <#
+    .SYNOPSIS
+        Validates a committed map and its mapped targets without historical Git objects.
+    .OUTPUTS
+        System.Management.Automation.PSCustomObject
+    #>
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$RepoRoot,
+
+        [Parameter(Mandatory = $true)]
+        [pscustomobject]$Map
+    )
+
+    $aliases = @($Map.aliases)
+    if ($Map.schemaVersion -ne '1.0' -or $Map.migrationId -ne 'vally-grader-names-v0.16') {
+        throw 'Committed grader lineage map identity is invalid.'
+    }
+    if ($Map.counts.sourceToTargetPairs -ne $script:ExpectedSourceToTargetPairs -or
+        $Map.counts.authoredAliases -ne $script:ExpectedAuthoredAliases -or
+        $Map.counts.generatedCopies -ne $script:ExpectedGeneratedCopies -or
+        $Map.counts.semanticChanges -ne 0 -or
+        $aliases.Count -ne $script:ExpectedAuthoredAliases) {
+        throw 'Committed grader lineage map counts are invalid.'
+    }
+    foreach ($digest in @($Map.sourceSpecSha256, $Map.targetSpecSha256, $Map.mapSha256)) {
+        if ([string]$digest -notmatch '^[a-f0-9]{64}$') {
+            throw 'Committed grader lineage map contains an invalid digest.'
+        }
+    }
+
+    $aliasJson = $aliases | ConvertTo-Json -Depth 20 -Compress
+    if ((Get-LineageSha256 -Text $aliasJson) -ne $Map.mapSha256) {
+        throw 'Committed grader lineage alias digest does not match its contents.'
+    }
+
+    Import-LineageYamlModule
+    $paths = @($aliases.source | Sort-Object -Unique)
+    $currentRecords = @(Get-CurrentGraderLineageRecords -RepoRoot $RepoRoot -Paths $paths)
+    $targetIndex = @{}
+    foreach ($record in $currentRecords) {
+        $key = "$($record.EvalName)`n$($record.Source)`n$($record.Stimulus)`n$($record.ResultKind)`n$($record.Name)"
+        if ($targetIndex.ContainsKey($key)) {
+            throw "Duplicate current grader composite key for '$($record.Name)'."
+        }
+        $targetIndex[$key] = $record
+    }
+
+    $oldKeys = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
+    $newKeys = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
+    foreach ($alias in $aliases) {
+        if ((Get-GraderResultKind -GraderType $alias.graderType) -ne $alias.resultKind) {
+            throw "Result kind does not match grader type for '$($alias.newName)'."
+        }
+        $oldKey = "$($alias.evalName)`n$($alias.stimulus)`n$($alias.resultKind)`n$($alias.oldName)"
+        $newKey = "$($alias.evalName)`n$($alias.stimulus)`n$($alias.resultKind)`n$($alias.newName)"
+        if (-not $oldKeys.Add($oldKey)) {
+            throw "Duplicate historical composite key for '$($alias.oldName)'."
+        }
+        if (-not $newKeys.Add($newKey)) {
+            throw "Duplicate current composite key for '$($alias.newName)'."
+        }
+
+        $targetKey = "$($alias.evalName)`n$($alias.source)`n$($alias.stimulus)`n$($alias.resultKind)`n$($alias.newName)"
+        if (-not $targetIndex.ContainsKey($targetKey)) {
+            throw "Mapped current grader '$($alias.newName)' was not found."
+        }
+        $target = $targetIndex[$targetKey]
+        if ($target.GraderType -ne $alias.graderType) {
+            throw "Mapped current grader '$($alias.newName)' has incompatible type drift."
+        }
+    }
+
+    return [pscustomobject]@{
+        sourceToTargetPairs = $Map.counts.sourceToTargetPairs
+        authoredAliases     = $aliases.Count
+        generatedCopies     = $Map.counts.generatedCopies
+        semanticChanges     = $Map.counts.semanticChanges
+    }
+}
+
 function Compare-GraderLineageRecords {
     <#
     .SYNOPSIS
@@ -646,9 +793,30 @@ function Invoke-GraderLineageMap {
         $OutputPath = Join-Path $resolvedRoot 'evals/migrations/vally-0.16-grader-name-aliases.json'
     }
 
-    if (([string]::IsNullOrWhiteSpace($SourceRevision) -or [string]::IsNullOrWhiteSpace($TargetRevision)) -and
-        (Test-Path -LiteralPath $OutputPath)) {
+    $existingMap = $null
+    if (Test-Path -LiteralPath $OutputPath -PathType Leaf) {
         $existingMap = Get-Content -Raw -LiteralPath $OutputPath | ConvertFrom-Json
+    }
+
+    if ($Check) {
+        if ($null -eq $existingMap) {
+            throw "Committed lineage map not found: $OutputPath"
+        }
+        $counts = Test-CommittedGraderLineageMap -RepoRoot $resolvedRoot -Map $existingMap
+        $renderedExisting = ($existingMap | ConvertTo-Json -Depth 20) -replace "`r`n", "`n"
+        $renderedExisting += "`n"
+        $existing = [System.IO.File]::ReadAllText($OutputPath) -replace "`r`n", "`n"
+        if ($existing -ne $renderedExisting) {
+            throw "Grader lineage map formatting drift detected: $OutputPath"
+        }
+        Write-Host "grader lineage map is current: $OutputPath" -ForegroundColor Green
+        return [pscustomobject]@{ Outcome = 'NoDrift'; OutputPath = $OutputPath; Counts = $counts }
+    }
+
+    if ([string]::IsNullOrWhiteSpace($SourceRevision) -or [string]::IsNullOrWhiteSpace($TargetRevision)) {
+        if ($null -eq $existingMap) {
+            throw 'SourceRevision and TargetRevision are required when no committed map is available.'
+        }
         if ([string]::IsNullOrWhiteSpace($SourceRevision)) {
             $SourceRevision = [string]$existingMap.sourceRevision
         }
@@ -660,28 +828,12 @@ function Invoke-GraderLineageMap {
         }
     }
 
-    if ([string]::IsNullOrWhiteSpace($SourceRevision) -or [string]::IsNullOrWhiteSpace($TargetRevision)) {
-        throw 'SourceRevision and TargetRevision are required when no committed map is available.'
-    }
-
     $map = New-GraderLineageMap -RepoRoot $resolvedRoot `
         -SourceProvenanceRevision $SourceProvenanceRevision `
         -SourceRevision $SourceRevision `
         -TargetRevision $TargetRevision
     $rendered = ($map | ConvertTo-Json -Depth 20) -replace "`r`n", "`n"
     $rendered += "`n"
-
-    if ($Check) {
-        if (-not (Test-Path -LiteralPath $OutputPath)) {
-            throw "Committed lineage map not found: $OutputPath"
-        }
-        $existing = [System.IO.File]::ReadAllText($OutputPath) -replace "`r`n", "`n"
-        if ($existing -ne $rendered) {
-            throw "Grader lineage map drift detected: $OutputPath"
-        }
-        Write-Host "grader lineage map is current: $OutputPath" -ForegroundColor Green
-        return [pscustomobject]@{ Outcome = 'NoDrift'; OutputPath = $OutputPath; Counts = $map.counts }
-    }
 
     $outputDirectory = Split-Path -Parent $OutputPath
     if ($outputDirectory -and -not (Test-Path -LiteralPath $outputDirectory)) {
