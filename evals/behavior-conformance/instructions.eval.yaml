@@ -1416,6 +1416,83 @@ stimuli:
         config:
           pattern: "(?i)duplicate-then-populate|anchor\\s+inheritance|probe-before-bulk|z-order"
 
+  - name: instruction-mural-bootstrap-scope-conformance
+    prompt: |
+      You are preparing a fresh-session Mural sequence that instantiates a
+      template and then creates widgets. Which Mural bootstrap instruction
+      applies, what exact local doctor scope arguments are required, and what
+      must happen when the verdict is not `ready`?
+    tags:
+      category: behavior-conformance
+      instruction: mural-bootstrap
+      advisory: "true"
+    graders:
+      - type: output-matches
+        name: instruction-attribution
+        config:
+          pattern: '(?i)mural-bootstrap\.instructions\.md|Mural Bootstrap'
+      - type: output-matches
+        name: multi-scope-doctor-call
+        config:
+          pattern: '(?is)mural doctor(?=.*--require-scope\s+templates:read)(?=.*--require-scope\s+murals:write)'
+      - type: output-matches
+        name: non-ready-verdict-stops
+        config:
+          pattern: '(?i)(not ready|non-ready|needs_setup|needs_login|needs_scope_upgrade|wrong_cwd|deps_missing).{0,160}(pause|stop|do not proceed)'
+
+  - name: instruction-mural-human-writeback-conformance
+    prompt: |
+      A Mural extractor is preparing metadata writeback to an existing widget
+      that lacks the `authored-by-ai` tag. Which Mural instructions govern the
+      operation, which fields are permitted, and what explicit override would
+      be required before updating a human-authored widget?
+    tags:
+      category: behavior-conformance
+      instruction: mural-human-record-writeback
+      advisory: "true"
+    graders:
+      - type: output-matches
+        name: instruction-attribution
+        config:
+          pattern: '(?i)(mural-human-record|mural-writeback-hygiene)\.instructions\.md'
+      - type: output-matches
+        name: metadata-only-fields
+        config:
+          pattern: '(?is)(tags).*(hyperlink).*(parentId|parent id)'
+      - type: output-matches
+        name: default-protection-and-override
+        config:
+          pattern: '(?i)(MuralHumanAuthoredProtected|protected by default|fail).{0,160}--force-human'
+      - type: output-matches
+        name: no-obsolete-opt-in-flag
+        config:
+          pattern: '(?i)--require-author-tag'
+          negate: true
+
+  - name: instruction-mural-destination-routing-conformance
+    prompt: |
+      A Mural extractor has a hydrated synthetic action record but the caller
+      has supplied neither a destination nor an action intent. Which Mural
+      destination instruction applies, what must the dispatcher do, and what
+      evidence limit applies to a local test-double result?
+    tags:
+      category: behavior-conformance
+      instruction: mural-destinations
+      advisory: "true"
+    graders:
+      - type: output-matches
+        name: instruction-attribution
+        config:
+          pattern: '(?i)mural-destinations\.instructions\.md|Mural Destinations'
+      - type: output-matches
+        name: explicit-routing-required
+        config:
+          pattern: '(?i)(destination).{0,120}(action intent|create|mutate|append|no-op).{0,160}(no-dispatch|do not dispatch|never guesses)'
+      - type: output-matches
+        name: local-evidence-ceiling
+        config:
+          pattern: '(?i)(local test double|LOCAL_TEST_DOUBLE).{0,160}(not|does not).{0,80}(native Mural|real destination|production)'
+
   - name: instruction-licensing-posture-conformance
     prompt: |
       You are authoring a skill reference file that summarizes upstream
