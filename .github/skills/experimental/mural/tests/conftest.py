@@ -31,12 +31,13 @@ from test_constants import (
     TEST_REDIRECT_URI,
 )
 
-
 _EV06_MODULES = {"test_doctor", "test_destinations", "test_ev06_assurance"}
 
 
 @pytest.fixture(autouse=True)
-def ev06_offline_guard(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> None:
+def ev06_offline_guard(
+    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Deny ambient network, browser, and keyring access in EV-06 tests."""
     if request.module.__name__.split(".")[-1] not in _EV06_MODULES:
         return
