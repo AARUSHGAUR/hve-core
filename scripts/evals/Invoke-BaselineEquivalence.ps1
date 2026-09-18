@@ -42,6 +42,11 @@
     cheaper model for advisory runs. Ignored for the `calibration` and `ci` tiers,
     which always run the fixed pair `gpt-5.6-luna` and `claude-sonnet-5`.
 
+.PARAMETER CalibrationModel
+    Optional fixed-model selector for an isolated `calibration` or `ci` producer.
+    Accepts only `gpt-5.6-luna` or `claude-sonnet-5`. When omitted, the existing
+    fixed-pair behavior is preserved. It does not affect `devloop` selection.
+
 .PARAMETER ComparisonJudgeModel
     Model used as the `vally compare` judge. Defaults to `claude-haiku-4.5`.
 
@@ -49,6 +54,11 @@
     Repository-relative path to the comparison-judging contract passed to
     `vally compare --eval-spec`. Defaults to
     `evals/baseline-equivalence/compare.eval.yml`.
+
+.PARAMETER ComparisonHeartbeatSeconds
+    Interval for trusted comparison progress messages while `vally compare` is
+    running. Defaults to 300 seconds. Heartbeats contain only model, phase,
+    attempt, and elapsed time; raw command output remains captured until exit.
 
 .PARAMETER RepoRoot
     Repository root. Defaults to the result of `git rev-parse --show-toplevel`, falling
@@ -93,6 +103,10 @@ param(
     [string]$Model,
 
     [Parameter(Mandatory = $false)]
+    [ValidateSet('gpt-5.6-luna', 'claude-sonnet-5')]
+    [string]$CalibrationModel,
+
+    [Parameter(Mandatory = $false)]
     [string]$RepoRoot,
 
     [Parameter(Mandatory = $false)]
@@ -112,6 +126,10 @@ param(
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
     [string]$ComparisonSpecPath = 'evals/baseline-equivalence/compare.eval.yml',
+
+    [Parameter(Mandatory = $false)]
+    [ValidateRange(1, 3600)]
+    [int]$ComparisonHeartbeatSeconds = 300,
 
     [Parameter(Mandatory = $false)]
     [switch]$NoBaselineCache
@@ -204,12 +222,19 @@ function Resolve-ModelList {
         [Parameter(Mandatory)]
         [string]$Tier,
         [string]$Hint,
-        [string]$ModelOverride
+        [string]$ModelOverride,
+        [string]$CalibrationModel
     )
 
     if ($Tier -in @('calibration', 'ci')) {
         # Keep cross-vendor coverage pinned to explicit model IDs rather than floating
         # aliases. Hints and overrides apply only to advisory devloop runs.
+        if (-not [string]::IsNullOrWhiteSpace($CalibrationModel)) {
+            if ($CalibrationModel -notin @('gpt-5.6-luna', 'claude-sonnet-5')) {
+                throw "Unsupported calibration model '$CalibrationModel'. Expected gpt-5.6-luna or claude-sonnet-5."
+            }
+            return @($CalibrationModel)
+        }
         return @('gpt-5.6-luna', 'claude-sonnet-5')
     }
 
@@ -457,20 +482,103 @@ function Invoke-VallyCommandWithCapture {
     param(
         [Parameter(Mandatory)]
         [string[]]$Arguments,
-        [string]$LogPath
+        [string]$LogPath,
+        [string]$Command = 'vally',
+        [string]$Model = 'unknown',
+        [ValidateRange(1, 3600)]
+        [int]$HeartbeatIntervalSeconds = 300,
+        [scriptblock]$ShouldCancel
     )
 
+    $wrapper = @'
+$commandName = $args[0]
+$commandArguments = if ($args.Count -gt 1) { @($args[1..($args.Count - 1)]) } else { @() }
+$exitCode = 0
+try {
+    & $commandName @commandArguments 2>&1
+    if ($null -ne $LASTEXITCODE) { $exitCode = $LASTEXITCODE }
+}
+catch {
+    Write-Error -ErrorAction Continue $_
+    $exitCode = 1
+}
+exit $exitCode
+'@
+
+    $commandInfo = Get-Command -Name $Command -ErrorAction Stop
+    $resolvedCommand = if ($commandInfo.CommandType -eq [System.Management.Automation.CommandTypes]::Alias) {
+        [string]$commandInfo.Definition
+    }
+    elseif ($commandInfo.CommandType -in @(
+            [System.Management.Automation.CommandTypes]::Application,
+            [System.Management.Automation.CommandTypes]::ExternalScript)) {
+        [string]$commandInfo.Source
+    }
+    else {
+        $Command
+    }
+
+    $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+    $startInfo.FileName = (Get-Command pwsh -ErrorAction Stop).Source
+    $startInfo.UseShellExecute = $false
+    $startInfo.CreateNoWindow = $true
+    $startInfo.RedirectStandardOutput = $true
+    $startInfo.RedirectStandardError = $true
+    $startInfo.StandardOutputEncoding = [System.Text.Encoding]::UTF8
+    $startInfo.StandardErrorEncoding = [System.Text.Encoding]::UTF8
+    $startInfo.ArgumentList.Add('-NoProfile')
+    $startInfo.ArgumentList.Add('-CommandWithArgs')
+    $startInfo.ArgumentList.Add($wrapper)
+    $startInfo.ArgumentList.Add($resolvedCommand)
+    foreach ($argument in $Arguments) { $startInfo.ArgumentList.Add($argument) }
+
+    $process = [System.Diagnostics.Process]::new()
+    $process.StartInfo = $startInfo
+    $started = $false
     $prev = [Console]::OutputEncoding
     try {
         [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-        $raw = & vally @Arguments 2>&1
-        $code = $LASTEXITCODE
+        if (-not $process.Start()) { throw "Could not start command '$Command'." }
+        $started = $true
+        $standardOutput = $process.StandardOutput.ReadToEndAsync()
+        $standardError = $process.StandardError.ReadToEndAsync()
+        $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+        $nextHeartbeat = $HeartbeatIntervalSeconds
+        Write-Host "Equivalence phase-start: model=$Model phase=compare attempt=1 elapsedSeconds=0" -ForegroundColor DarkGray
+
+        while (-not $process.WaitForExit(250)) {
+            if ($ShouldCancel -and (& $ShouldCancel)) {
+                throw [System.OperationCanceledException]::new('Comparison command execution was interrupted.')
+            }
+            if ($stopwatch.Elapsed.TotalSeconds -ge $nextHeartbeat) {
+                $elapsedSeconds = [math]::Floor($stopwatch.Elapsed.TotalSeconds)
+                Write-Host "Equivalence heartbeat: model=$Model phase=compare attempt=1 elapsedSeconds=$elapsedSeconds" -ForegroundColor DarkGray
+                $nextHeartbeat += $HeartbeatIntervalSeconds
+            }
+        }
+
+        $process.WaitForExit()
+        $code = $process.ExitCode
+        $stdoutText = $standardOutput.GetAwaiter().GetResult()
+        $stderrText = $standardError.GetAwaiter().GetResult()
+        $elapsedSeconds = [math]::Floor($stopwatch.Elapsed.TotalSeconds)
+        Write-Host "Equivalence phase-complete: model=$Model phase=compare attempt=1 elapsedSeconds=$elapsedSeconds" -ForegroundColor DarkGray
     }
     finally {
+        if ($started -and -not $process.HasExited) {
+            $process.Kill($true)
+            $process.WaitForExit()
+        }
+        $process.Dispose()
         [Console]::OutputEncoding = $prev
     }
 
-    $lines = @($raw | ForEach-Object { $_.ToString() })
+    $lines = @(
+        foreach ($text in @($stdoutText, $stderrText)) {
+            if ([string]::IsNullOrEmpty($text)) { continue }
+            @($text -split '\r?\n') | Where-Object { $_.Length -gt 0 }
+        }
+    )
     foreach ($line in $lines) { Write-Host $line }
 
     if ($LogPath) {
@@ -817,7 +925,7 @@ if ($MyInvocation.InvocationName -ne '.') {
         }
 
         $modelHint = Get-AgentModelHint -RepoRoot $resolvedRoot -Agent $Agent
-        $models = @(Resolve-ModelList -Tier $Tier -Hint $modelHint -ModelOverride $Model)
+        $models = @(Resolve-ModelList -Tier $Tier -Hint $modelHint -ModelOverride $Model -CalibrationModel $CalibrationModel)
         $primaryModel = $models[0]
 
         # The comparison contract is resolved before any model-backed work so a missing
@@ -1276,7 +1384,11 @@ if ($MyInvocation.InvocationName -ne '.') {
                     '--output', $compareJsonlPath
                 )
                 $compareLog = Join-Path $resolvedRoot "logs/vally-compare-$model-$runId.log"
-                $resultC = Invoke-VallyCommandWithCapture -Arguments $compareArgs -LogPath $compareLog
+                $resultC = Invoke-VallyCommandWithCapture `
+                    -Arguments $compareArgs `
+                    -LogPath $compareLog `
+                    -Model $model `
+                    -HeartbeatIntervalSeconds $ComparisonHeartbeatSeconds
                 $compareFailed = $resultC.ExitCode -ne 0
                 if ($compareFailed) { $runHealthFailures++ }
                 $compareLogs.Add($compareLog)
@@ -1371,6 +1483,7 @@ if ($MyInvocation.InvocationName -ne '.') {
             # rather than reading absent fields as zeros, which is how a dropped field
             # previously degraded into a plausible-looking healthy run.
             schemaVersion            = '2.1.0'
+            runId                    = $runId
             agent                    = $Agent
             tier                     = $Tier
             model                    = $primaryModel
