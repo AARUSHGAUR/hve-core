@@ -131,6 +131,8 @@ Describe 'New-AgentEvalPlan.ps1' -Tag 'Unit' {
         $plan.baseline.reason | Should -Be 'agent-not-affected:rpi-agent'
         @($plan.baseline.models) | Should -HaveCount 0
         @($plan.expectedProducers | Where-Object { $_ -like 'baseline:*' }) | Should -HaveCount 0
+        @($plan.expectedProducers) | Should -Be @('prompt', 'instruction', 'skill')
+        @($plan.expectedProducers | Where-Object { [string]::IsNullOrWhiteSpace([string]$_) }) | Should -HaveCount 0
     }
 
     It 'rejects an artifact without coverage' {

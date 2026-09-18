@@ -242,9 +242,12 @@ function New-AgentEvalPlanValue {
         reason   = if ($baselineRequired) { "affected-agent:$BaselineSubject" } else { "agent-not-affected:$BaselineSubject" }
         models   = $baselineModels
     }
-    $expectedProducers = @($ordinaryShards.id) + @('prompt', 'instruction', 'skill')
+    $expectedProducers = [System.Collections.Generic.List[string]]::new()
+    foreach ($shard in $ordinaryShards) { $expectedProducers.Add([string]$shard.id) }
+    foreach ($producer in @('prompt', 'instruction', 'skill')) { $expectedProducers.Add($producer) }
     if ($baselineRequired) {
-        $expectedProducers += @('baseline:gpt-5.6-luna', 'baseline:claude-sonnet-5')
+        $expectedProducers.Add('baseline:gpt-5.6-luna')
+        $expectedProducers.Add('baseline:claude-sonnet-5')
     }
 
     $digestPayload = [ordered]@{

@@ -34,6 +34,21 @@ Describe 'Merge-EvalExecution.ps1' -Tag 'Unit' {
         $result.totals.artifacts | Should -Be 1
         @($result.producers) | Should -Be @('instruction', 'ordinary-01', 'prompt', 'skill')
     }
+    It 'merges non-agent producers when the plan has no ordinary shards' {
+        $plan = New-FanInPlan
+        $plan.ordinaryShards = @()
+        $plan.expectedProducers = @('prompt', 'instruction', 'skill')
+        $payload = [ordered]@{ schemaVersion = $plan.schemaVersion; manifestDigests = [ordered]@{ changedArtifacts = $plan.manifestDigests.changedArtifacts; changedSpecs = $plan.manifestDigests.changedSpecs }; baseline = [ordered]@{ required = $false; reason = $plan.baseline.reason; models = @() }; ordinaryShards = @(); expectedProducers = @($plan.expectedProducers) }
+        $plan.planDigest = Get-AgentEvalValueDigest -Value $payload
+
+        $result = Merge-EvalSummaryValue -Plan $plan -Summary @(
+            (New-FanInSummary prompt),
+            (New-FanInSummary instruction),
+            (New-FanInSummary skill)
+        )
+
+        @($result.producers) | Should -Be @('instruction', 'prompt', 'skill')
+    }
     It 'rejects missing producers' {
         $plan = New-FanInPlan
         $ordinary = New-FanInSummary 'ordinary-01'; $ordinary.planDigest = $plan.planDigest

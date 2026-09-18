@@ -121,10 +121,10 @@ The default heartbeat interval is 60 seconds. Aggregate summaries carry diagnost
 
 The reusable workflow inputs change scheduling without changing evidence semantics:
 
-| Input                     | Normal value | Rollback value | Effect                                                   |
-|---------------------------|--------------|----------------|----------------------------------------------------------|
-| `ordinary-shard-count`    | `4`          | `1`            | Uses the same planner and runner with one ordinary shard |
-| `baseline-max-parallel`   | `2`          | `1`            | Serializes the same isolated baseline model producers    |
+| Input                   | Normal value | Rollback value | Effect                                                   |
+|-------------------------|--------------|----------------|----------------------------------------------------------|
+| `ordinary-shard-count`  | `4`          | `1`            | Uses the same planner and runner with one ordinary shard |
+| `baseline-max-parallel` | `2`          | `1`            | Serializes the same isolated baseline model producers    |
 
 The single-process fixed-pair baseline driver remains a deterministic aggregation
 oracle for local tests. It is not a second production rollback path.

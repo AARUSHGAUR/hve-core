@@ -77,11 +77,31 @@ Describe 'Build-GraderLineageMap.ps1' -Tag 'Unit' {
                 -TargetRevision $script:TargetRevision
         } | Should -Throw -ExpectedMessage '*Git command failed*'
 
+        $repo = Join-Path $TestDrive "lineage-$([guid]::NewGuid())"
+        $lineageRoot = Join-Path $repo 'evals/agent-behavior/stimuli'
+        New-Item -ItemType Directory -Path $lineageRoot -Force | Out-Null
+        & git -C $repo init --quiet
+        & git -C $repo config user.name 'Test User'
+        & git -C $repo config user.email 'test@example.invalid'
+        $lineagePath = Join-Path $lineageRoot 'sample.yml'
+        Set-Content -LiteralPath $lineagePath -Value 'version: provenance' -Encoding utf8NoBOM
+        & git -C $repo add .
+        & git -C $repo commit --quiet -m 'provenance'
+        $provenanceRevision = (& git -C $repo rev-parse HEAD).Trim()
+        Set-Content -LiteralPath $lineagePath -Value 'version: source' -Encoding utf8NoBOM
+        & git -C $repo add .
+        & git -C $repo commit --quiet -m 'source'
+        $sourceRevision = (& git -C $repo rev-parse HEAD).Trim()
+        Set-Content -LiteralPath (Join-Path $repo 'README.md') -Value '# target' -Encoding utf8NoBOM
+        & git -C $repo add .
+        & git -C $repo commit --quiet -m 'target'
+        $targetRevision = (& git -C $repo rev-parse HEAD).Trim()
+
         {
-            Assert-GraderLineageRevisions -RepoRoot $script:RepoRoot `
-                -SourceProvenanceRevision $script:TargetRevision `
-                -SourceRevision $script:SourceRevision `
-                -TargetRevision $script:TargetRevision
+            Assert-GraderLineageRevisions -RepoRoot $repo `
+                -SourceProvenanceRevision $provenanceRevision `
+                -SourceRevision $sourceRevision `
+                -TargetRevision $targetRevision
         } | Should -Throw -ExpectedMessage '*does not match provenance*'
     }
 }

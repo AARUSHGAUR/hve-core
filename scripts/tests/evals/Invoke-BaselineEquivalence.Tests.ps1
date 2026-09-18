@@ -796,7 +796,14 @@ Start-Sleep -Seconds 30
 
         Test-Path -LiteralPath $pidPath | Should -BeTrue
         $childPid = [int](Get-Content -LiteralPath $pidPath -Raw)
-        Get-Process -Id $childPid -ErrorAction SilentlyContinue | Should -BeNullOrEmpty
+        $deadline = [DateTime]::UtcNow.AddSeconds(5)
+        do {
+            $remainingProcess = Get-Process -Id $childPid -ErrorAction SilentlyContinue
+            if ($null -ne $remainingProcess -and [DateTime]::UtcNow -lt $deadline) {
+                Start-Sleep -Milliseconds 50
+            }
+        } while ($null -ne $remainingProcess -and [DateTime]::UtcNow -lt $deadline)
+        $remainingProcess | Should -BeNullOrEmpty
     }
 }
 
