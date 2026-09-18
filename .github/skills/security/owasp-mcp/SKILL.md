@@ -9,7 +9,7 @@ metadata:
   framework_revision: "1.0.0"
   last_updated: "2026-02-13"
   skill_based_on: "https://github.com/chris-buckley/agnostic-prompt-standard"
-  content_based_on: "https://owasp.org/www-project-mcp-top-10/"
+  content_based_on: "https://owasp.org/projects/mcp-top-10/"
 ---
 
 # OWASP MCP Top 10 — Skill Entry

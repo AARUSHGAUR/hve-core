@@ -73,4 +73,4 @@ Obligations anchor to the standards packages indexed in `SKILL.md`:
 - NISTIR 8062: https://doi.org/10.6028/NIST.IR.8062
 - GDPR: https://gdpr-info.eu
 - CCPA/CPRA: https://oag.ca.gov/privacy/ccpa
-- OWASP Top 10 Privacy Risks: https://owasp.org/www-project-top-10-privacy-risks/
+- OWASP Top 10 Privacy Risks: https://owasp.org/projects/top-10-privacy-risks/

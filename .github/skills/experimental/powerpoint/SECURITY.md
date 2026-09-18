@@ -282,7 +282,7 @@ For an active issue tracker entry covering these gaps, see the [hve-core issues 
 ## References
 
 * [STRIDE Threat Model](https://learn.microsoft.com/azure/security/develop/threat-modeling-tool-threats)
-* [OWASP Top 10 for Web Applications](https://owasp.org/www-project-top-ten/)
+* [OWASP Top 10 for Web Applications](https://owasp.org/projects/top-ten/)
 * [python-pptx](https://python-pptx.readthedocs.io/), [PyMuPDF](https://pymupdf.readthedocs.io/), [LibreOffice](https://www.libreoffice.org/)
 * [Repository security model](../../../../docs/security/security-model.md)
 

@@ -435,7 +435,7 @@ For an active issue tracker entry covering these gaps, see the [hve-core issues 
 ## References
 
 * [STRIDE Threat Model](https://learn.microsoft.com/azure/security/develop/threat-modeling-tool-threats)
-* [OWASP Top 10 for LLM Applications](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
+* [OWASP Top 10 for LLM Applications](https://owasp.org/projects/genai-security/)
 * [Mural OAuth documentation](https://developers.mural.co/public/docs/oauth) (verified 2026-05-10)
 * [RFC 6749 — OAuth 2.0](https://datatracker.ietf.org/doc/html/rfc6749), [RFC 7636 — PKCE](https://datatracker.ietf.org/doc/html/rfc7636), [RFC 6819 — OAuth Threat Model](https://datatracker.ietf.org/doc/html/rfc6819)
 * [Repository security model](../../../../docs/security/security-model.md)

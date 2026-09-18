@@ -240,7 +240,7 @@ For an active issue tracker entry covering these gaps, see the [hve-core issues 
 ## References
 
 * [STRIDE Threat Model](https://learn.microsoft.com/azure/security/develop/threat-modeling-tool-threats)
-* [OWASP Top 10](https://owasp.org/www-project-top-ten/)
+* [OWASP Top 10](https://owasp.org/projects/top-ten/)
 * [FFmpeg Security](https://ffmpeg.org/security.html)
 * [Repository security model](../../../../docs/security/security-model.md)
 

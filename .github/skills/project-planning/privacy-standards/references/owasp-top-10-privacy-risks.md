@@ -23,4 +23,4 @@ OWASP privacy guidance highlights recurring privacy risks associated with data c
 
 Content is adapted from the OWASP Top 10 Privacy Risks project (Version 2.0) and preserved here as a planning reference with attribution.
 
-- Source: https://owasp.org/www-project-top-10-privacy-risks/
+- Source: https://owasp.org/projects/top-10-privacy-risks/

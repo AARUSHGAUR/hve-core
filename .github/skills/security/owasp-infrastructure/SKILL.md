@@ -9,7 +9,7 @@ metadata:
   framework_revision: "1.0.0"
   last_updated: "2026-02-13"
   skill_based_on: "https://github.com/chris-buckley/agnostic-prompt-standard"
-  content_based_on: "https://owasp.org/www-project-top-10-infrastructure-security-risks/"
+  content_based_on: "https://owasp.org/projects/top-10-infrastructure-security-risks/"
 ---
 
 # OWASP Infrastructure Top 10 — Skill Entry

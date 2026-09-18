@@ -231,7 +231,7 @@ For an active issue tracker entry covering these gaps, see the [hve-core issues 
 ## References
 
 * [STRIDE Threat Model](https://learn.microsoft.com/azure/security/develop/threat-modeling-tool-threats)
-* [OWASP Top 10](https://owasp.org/www-project-top-ten/)
+* [OWASP Top 10](https://owasp.org/projects/top-ten/)
 * PowerPoint skill security model: the `SECURITY.md` bundled with the `powerpoint` skill. When that skill is unavailable, treat the delegated build risk as unassessed rather than assuming it is covered.
 * [Repository security model](../../../../docs/security/security-model.md)
 

@@ -10,7 +10,7 @@ metadata:
   framework_revision: "1.0.0"
   last_updated: "2026-02-13"
   skill_based_on: "https://github.com/chris-buckley/agnostic-prompt-standard"
-  content_based_on: "https://owasp.org/www-project-docker-top-10/"
+  content_based_on: "https://owasp.org/projects/docker-top-10/"
 ---
 
 # OWASP® Docker Top 6 — Skill Entry
@@ -43,7 +43,7 @@ Copyright © OWASP Foundation.
 OWASP® Docker Top 10 content is derived from works by the
 OWASP Foundation, licensed under CC BY-NC-SA 4.0
 (<https://creativecommons.org/licenses/by-nc-sa/4.0/>).
-Source: <https://owasp.org/www-project-docker-top-10/>
+Source: <https://owasp.org/projects/docker-top-10/>
 Modifications: Vulnerability descriptions restructured into agent-consumable reference
 documents with added detection and remediation guidance.
 OWASP® is a registered trademark of the OWASP Foundation. Use does not imply endorsement.

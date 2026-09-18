@@ -475,7 +475,7 @@ These threats address risks in the development container configuration used for 
 
 ### AI-Specific Threats
 
-These threats address risks specific to AI/ML systems as documented by [OWASP LLM Top 10](https://owasp.org/www-project-top-10-for-large-language-model-applications/) and [MITRE ATLAS](https://atlas.mitre.org/).
+These threats address risks specific to AI/ML systems as documented by [OWASP LLM Top 10](https://owasp.org/projects/genai-security/) and [MITRE ATLAS](https://atlas.mitre.org/).
 
 #### AI-1: Prompt Injection via Artifact Content
 
@@ -2359,7 +2359,7 @@ Skills whose scripts perform only local validation with no external surface (for
 ### External Standards
 
 * [OpenSSF Best Practices Silver Criteria](https://www.bestpractices.dev/en/criteria/1)
-* [OWASP LLM Top 10](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
+* [OWASP LLM Top 10](https://owasp.org/projects/genai-security/)
 * [MITRE ATLAS](https://atlas.mitre.org/)
 * [Microsoft Responsible AI Standard](https://www.microsoft.com/ai/responsible-ai)
 * [STRIDE Threat Model](https://learn.microsoft.com/azure/security/develop/threat-modeling-tool-threats)

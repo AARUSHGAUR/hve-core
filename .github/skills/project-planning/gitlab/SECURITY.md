@@ -431,7 +431,7 @@ For an active issue tracker entry covering these gaps, see [microsoft/hve-core#2
 ## References
 
 * [STRIDE Threat Model](https://learn.microsoft.com/azure/security/develop/threat-modeling-tool-threats)
-* [OWASP Top 10 for Web Applications](https://owasp.org/www-project-top-ten/)
+* [OWASP Top 10 for Web Applications](https://owasp.org/projects/top-ten/)
 * [GitLab REST API](https://docs.gitlab.com/ee/api/rest/)
 * [Repository security model](../../../../docs/security/security-model.md)
 

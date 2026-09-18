@@ -285,7 +285,7 @@ For an active issue tracker entry covering these gaps, see the [hve-core issues 
 ## References
 
 * [STRIDE Threat Model](https://learn.microsoft.com/azure/security/develop/threat-modeling-tool-threats)
-* [OWASP Top 10 for LLM Applications](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
+* [OWASP Top 10 for LLM Applications](https://owasp.org/projects/genai-security/)
 * [Azure AI Speech security](https://learn.microsoft.com/azure/ai-services/speech-service/)
 * [DefaultAzureCredential](https://learn.microsoft.com/azure/developer/python/sdk/authentication/credential-chains)
 * [Repository security model](../../../../docs/security/security-model.md)
