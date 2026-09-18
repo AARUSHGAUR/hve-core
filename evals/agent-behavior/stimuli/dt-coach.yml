@@ -242,7 +242,8 @@ stimuli:
     prompt: |
       Resume the staged project `synthetic-agent-lifecycle`. The team chooses a
       backward transition from Method 5 to Method 3. Attempt the normal state
-      update. If the configured PowerShell write fails, report the failure,
+      update by running a PowerShell or shell command rather than an editor
+      tool. If that configured write fails, report the failure,
       preserve the last durable Method 5 state and unrelated extension data,
       and explain that a later resume must start from that durable state.
     environment:
