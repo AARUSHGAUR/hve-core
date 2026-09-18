@@ -19,7 +19,9 @@ import {
   resolveContainedArtifactPath,
   runDefaultVisualPreflight,
   runRealCalibrationSession,
+  selectCalibrationCases,
 } from '../../../scripts/runtime_a11y/runner/calibration-executor.mjs';
+import { catalogDigest } from '../../../scripts/runtime_a11y/runner/case-catalog.mjs';
 
 function computeArtifactHash(filePath) {
   return createHash('sha256').update(readFileSync(filePath)).digest('hex');
@@ -41,6 +43,64 @@ test('resolveCalibrationCases rejects a traversal-bearing journey identifier', (
   assert.throws(
     () => resolveCalibrationCases({ calibration: { journeys: [{ id: '../../escape' }] } }),
     /Journey ID/,
+  );
+});
+
+test('selectCalibrationCases preserves requested order and rejects invalid selections', () => {
+  const config = {
+    calibration: {
+      journeys: [{ id: 'first' }, { id: 'second' }],
+    },
+  };
+  assert.deepEqual(
+    selectCalibrationCases(config, ['second', 'first']).map((journey) => journey.journeyId),
+    ['second', 'first'],
+  );
+  assert.throws(() => selectCalibrationCases(config, ['missing']), /Unknown calibration journey ID/);
+  assert.throws(() => selectCalibrationCases(config, ['first', 'first']), /must be unique/);
+});
+
+test('selectCalibrationCases does not widen an omitted filter to bound catalog executions', () => {
+  const catalog = {
+    schemaVersion: '1.0.0',
+    catalogId: 'test-catalog',
+    cases: [{
+      caseId: 'CASE-1',
+      outcomeClass: 'speech',
+      requiredCapabilities: [],
+      targetRefs: ['target.one'],
+      states: ['desktop'],
+    }],
+  };
+  const binding = {
+    schemaVersion: '1.0.0',
+    catalogId: 'test-catalog',
+    catalogDigest: catalogDigest(catalog),
+    routes: { 'route.home': '/' },
+    targets: { 'target.one': { routeRef: 'route.home', selector: 'main' } },
+    caseBindings: {
+      'CASE-1': { targetRefs: ['target.one'], executions: [{ id: 'bound-only' }] },
+    },
+  };
+  const config = {
+    calibration: { journeys: [{ id: 'authored' }] },
+    resolvedCaseCatalog: catalog,
+    resolvedBindingProfile: binding,
+  };
+
+  // The bound execution stays resolvable by ID, but an omitted filter must not
+  // silently promote it into live control.
+  assert.deepEqual(
+    resolveCalibrationCases(config).map((journey) => journey.journeyId),
+    ['authored', 'bound-only'],
+  );
+  assert.deepEqual(
+    selectCalibrationCases(config, []).map((journey) => journey.journeyId),
+    ['authored'],
+  );
+  assert.deepEqual(
+    selectCalibrationCases(config, ['bound-only']).map((journey) => journey.journeyId),
+    ['bound-only'],
   );
 });
 
@@ -144,6 +204,35 @@ test('resolveCalibrationCases preserves the configured journeys and profile meta
   assert.equal(cases[0].profileFingerprint.locale, 'en-US');
   assert.equal(cases[0].triggerAfterDriverStart, true);
   assert.equal(cases[1].journeyId, 'search-status-announcement');
+});
+
+test('resolveCalibrationCases assigns stable unique assertion IDs and rejects duplicates', () => {
+  const [journey] = resolveCalibrationCases({
+    calibration: {
+      journeys: [{
+        id: 'tree-case',
+        assertions: [
+          { type: 'nodeMatches', evidenceType: 'accessibilityTree', expected: { role: 'main' } },
+          { type: 'nodeMatches', evidenceType: 'accessibilityTree', expected: { role: 'group' } },
+        ],
+      }],
+    },
+  });
+  assert.deepEqual(
+    journey.assertions.map((assertion) => assertion.id),
+    ['tree-case-assertion-1', 'tree-case-assertion-2'],
+  );
+  assert.throws(() => resolveCalibrationCases({
+    calibration: {
+      journeys: [{
+        id: 'duplicate-case',
+        assertions: [
+          { id: 'same', type: 'contains', value: 'one' },
+          { id: 'same', type: 'contains', value: 'two' },
+        ],
+      }],
+    },
+  }), /Duplicate assertion ID/);
 });
 
 test('defaultRunAtCase preserves trigger timing metadata for the AT executor', async () => {
@@ -362,6 +451,41 @@ test('resolveCalibrationCases preserves captureMode and defaultRunAtCase forward
   }
 });
 
+test('resolveCalibrationCases rejects invalid action capture combinations during normalization', () => {
+  assert.throws(
+    () => resolveCalibrationCases({
+      calibration: {
+        journeys: [{
+          id: 'missing-post-start-trigger',
+          captureMode: 'action',
+          trigger: { action: 'click', target: '#button' },
+        }],
+      },
+    }),
+    /triggerAfterDriverStart/,
+  );
+  assert.throws(
+    () => resolveCalibrationCases({
+      calibration: {
+        journeys: [{
+          id: 'invalid-evidence',
+          captureMode: 'action',
+          triggerAfterDriverStart: true,
+          trigger: { action: 'click', target: '#button' },
+          assertions: [{ type: 'contains', value: 'added', evidenceType: 'actionTranscript' }],
+        }],
+      },
+    }),
+    /Unsupported calibration assertion evidence type/,
+  );
+  assert.throws(
+    () => resolveCalibrationCases({
+      calibration: { journeys: [{ id: 'invalid-mode', captureMode: 'fallback' }] },
+    }),
+    /Unsupported calibration capture mode/,
+  );
+});
+
 test('runRealCalibrationSession records browser teardown failures without throwing', async () => {
   const tempDir = mkdtempSync(join(tmpdir(), 'calibration-teardown-'));
   try {
@@ -440,6 +564,51 @@ test('runRealCalibrationSession records browser teardown failures without throwi
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
   }
+});
+
+test('runRealCalibrationSession bounds hung page and browser teardown', async () => {
+  const sharedPage = {
+    context() {
+      return {};
+    },
+    close: async () => new Promise(() => {}),
+  };
+  const sharedBrowser = {
+    async newPage() {
+      return sharedPage;
+    },
+    close: async () => new Promise(() => {}),
+    isConnected() {
+      return true;
+    },
+  };
+
+  const session = await runRealCalibrationSession({
+    config: {
+      calibration: {
+        journeys: [{
+          id: 'teardown-timeout',
+          route: '/',
+          surfaceId: 'homepage',
+          state: 'desktop',
+          trigger: { action: 'focus', target: 'body' },
+          commands: [{ kind: 'pause', durationMs: 0 }],
+          assertions: [{ id: 'speech', type: 'contains', value: 'test' }],
+        }],
+      },
+    },
+    probePrerequisites: async () => ({ nvdaAvailable: true, desktopUnlocked: true }),
+    runVisualPreflight: async () => ({ status: 'pass', summary: { classification: 'pass' } }),
+    launchBrowser: async () => sharedBrowser,
+    runAtCase: async () => ({ classification: 'infrastructureFailure' }),
+    teardownTimeoutMs: 5,
+  });
+
+  assert.equal(session.browserTeardown.pageCloseStatus, 'failed');
+  assert.match(session.browserTeardown.pageCloseError, /timed out/);
+  assert.equal(session.browserTeardown.browserCloseStatus, 'failed');
+  assert.match(session.browserTeardown.browserCloseError, /timed out/);
+  assert.equal(session.browserTeardown.browserConnectedAfterClose, true);
 });
 
 test('defaultRunAtCase handles circular evidence payloads without overflowing the stack', async () => {
@@ -606,9 +775,50 @@ test('classifyAtCaseResult enforces Gate B evidence and assertion gating', async
       { name: 'transcript drift cannot pass', mutate: (result) => { result.evidence.reason = 'baseline mismatch'; }, expected: 'transcriptDrift' },
       { name: 'infrastructure error cannot pass', mutate: (result) => { result.evidence.error = 'browser launch failed'; }, expected: 'infrastructureFailure' },
       { name: 'empty phrases', mutate: (result) => { result.evidence.rawPhrases = []; result.evidence.normalizedPhrases = []; }, expected: 'infrastructureFailure' },
+      {
+        name: 'tree-only assertion does not require speech',
+        mutate: (result) => {
+          result.requiredAssertions = [{ id: 'tree', evidenceType: 'accessibilityTree' }];
+          result.assertions = [{ id: 'tree', status: 'pass' }];
+          result.evidence.rawPhrases = [];
+          result.evidence.normalizedPhrases = [];
+          result.evidence.accessibilityTree = { nodes: [{ role: { value: 'main' } }] };
+        },
+        expected: 'pass',
+      },
+      {
+        name: 'tree-only assertion requires tree evidence',
+        mutate: (result) => {
+          result.requiredAssertions = [{ id: 'tree', evidenceType: 'accessibilityTree' }];
+          result.assertions = [{ id: 'tree', status: 'pass' }];
+          result.evidence.rawPhrases = [];
+          result.evidence.normalizedPhrases = [];
+          result.evidence.accessibilityTree = null;
+        },
+        expected: 'infrastructureFailure',
+      },
       { name: 'unpersisted evidence', mutate: (result) => { result.artifactHashes = {}; }, expected: 'infrastructureFailure' },
       { name: 'hash mismatch', mutate: (result) => { result.artifactHashes['artifacts/evidence.json'] = 'deadbeef'; }, expected: 'infrastructureFailure' },
       { name: 'valid real pass', mutate: () => {}, expected: 'pass' },
+      {
+        name: 'valid live adapter pass',
+        mutate: (result) => {
+          result.driver = 'nvda';
+          result.evidence.provenance.driver = 'nvda';
+          result.evidence.provenance.realAtPassAllowed = true;
+          result.evidence.provenance.guidepupLibraryVersion = '0.34.0';
+          result.evidence.provenance.nvdaAssetVersion = '0.2.0-2026.1.1';
+        },
+        expected: 'pass',
+      },
+      {
+        name: 'unproven nvda driver cannot pass',
+        mutate: (result) => {
+          result.driver = 'nvda';
+          result.evidence.provenance.driver = 'nvda';
+        },
+        expected: 'infrastructureFailure',
+      },
     ];
 
     for (const testCase of cases) {
@@ -842,6 +1052,51 @@ test('defaultRunAtCase classifies a fully persisted real-evidence result as pass
   }
 });
 
+test('defaultRunAtCase classifies a persisted tree-only real result as pass', async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), 'calibration-tree-pass-'));
+  try {
+    const journey = {
+      journeyId: 'tree-pass',
+      route: '/',
+      surfaceId: 'presentation',
+      state: 'initial',
+      trigger: { action: 'focus', target: 'main' },
+      commands: [{ kind: 'pause', durationMs: 0 }],
+      assertions: [{ id: 'tree', type: 'nodeMatches', evidenceType: 'accessibilityTree', expected: { role: 'main' } }],
+    };
+
+    const result = await defaultRunAtCase({
+      journey,
+      config: { baseUrl: 'http://127.0.0.1:3000' },
+      runRoot: tempDir,
+      processAtPlanCaseImpl: async () => ({
+        status: 'pass',
+        driver: 'nvda',
+        at: 'nvda',
+        capability: { supported: true, synthetic: false, at: 'nvda' },
+        assertions: [{ id: 'tree', status: 'pass' }],
+        evidence: {
+          synthetic: false,
+          rawPhrases: [],
+          normalizedPhrases: [],
+          accessibilityTree: { nodes: [{ role: { value: 'main' } }] },
+          provenance: {
+            driver: 'nvda',
+            at: 'nvda',
+            realAtPassAllowed: true,
+            guidepupLibraryVersion: '0.34.0',
+            nvdaAssetVersion: '0.2.1-2026.2',
+          },
+        },
+      }),
+    });
+
+    assert.equal(result.classification, 'pass');
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
 test('classifyAtCaseResult maps unsupported, assertion, product, infrastructure, and transcript drift consistently', async () => {
   const cases = [
     { name: 'unsupported', input: { status: 'unsupported', evidence: { synthetic: false } }, expected: 'unavailable' },
@@ -857,7 +1112,7 @@ test('classifyAtCaseResult maps unsupported, assertion, product, infrastructure,
   }
 });
 
-test('detectGuidepupNvda accepts registry-backed NVDA registration without persisting installation paths', async () => {
+test('detectGuidepupNvda keeps registry evidence diagnostic when the package and selected asset are absent', async () => {
   const result = await detectGuidepupNvda({
     platform: 'win32',
     spawn: (command, args) => {
@@ -872,8 +1127,9 @@ test('detectGuidepupNvda accepts registry-backed NVDA registration without persi
     importGuidepup: async () => null,
   });
 
-  assert.equal(result.guidepupRegistered, true);
-  assert.equal(result.guidepupVersion, '0.2.0-2026.1.1');
+  assert.equal(result.libraryInstalled, false);
+  assert.equal(result.selectedAssetInstalled, false);
+  assert.equal(result.registryVersion, '0.2.0-2026.1.1');
 });
 
 test('probePrerequisites reports ready for interactive desktop, Chrome, and isolated Guidepup NVDA', async () => {
@@ -907,7 +1163,9 @@ test('probePrerequisites reports ready for interactive desktop, Chrome, and isol
         },
       }),
       importGuidepup: async () => ({
+        guidepupVersion: '0.34.0',
         nvda: {
+          version: '0.2.1-2026.2',
           start: async () => {},
           stop: async () => {},
           press: async () => {},
@@ -915,6 +1173,9 @@ test('probePrerequisites reports ready for interactive desktop, Chrome, and isol
           clearSpokenPhraseLog: async () => {},
           capabilities: ['nvda'],
         },
+      }),
+      importGuidepupAssetProbe: async () => ({
+        isNVDAInstalled: () => true,
       }),
     },
   };
@@ -924,7 +1185,10 @@ test('probePrerequisites reports ready for interactive desktop, Chrome, and isol
   assert.equal(result.chromeExecutable, 'channel:chrome');
   assert.equal(result.chromeVersion, '150.0.7871.127');
   assert.equal(result.nvdaAvailable, true);
-  assert.equal(result.guidepupRegistered, true);
+  assert.equal(result.libraryInstalled, true);
+  assert.equal(result.selectedAssetInstalled, true);
+  assert.equal(result.guidepupLibraryVersion, '0.34.0');
+  assert.equal(result.nvdaAssetVersion, '0.2.1-2026.2');
   assert.equal(result.reason, null);
   assert.equal(result.metadata.chromeExecutable, 'channel:chrome');
   assert.equal(result.metadata.platform, 'win32');
@@ -959,10 +1223,48 @@ test('probePrerequisites reports the blocking reasons when Windows prerequisites
   assert.equal(result.chromeExecutable, null);
   assert.equal(result.chromeVersion, null);
   assert.equal(result.nvdaAvailable, false);
-  assert.equal(result.guidepupRegistered, false);
+  assert.equal(result.libraryInstalled, false);
+  assert.equal(result.selectedAssetInstalled, false);
+  assert.equal(result.nvdaProcessActive, true);
   assert.ok(result.reasons.includes('Interactive desktop was not available.'));
   assert.ok(result.reasons.includes('Chrome launch failed: system Chrome unavailable'));
-  assert.ok(result.reasons.includes('NVDA registration for isolated Guidepup execution was not verified.'));
+  assert.ok(result.reasons.includes('The skill-local @guidepup/guidepup package was not available.'));
+  assert.ok(result.reasons.some((reason) => reason.includes('@guidepup/setup@0.25.3 install nvda')));
+  assert.ok(result.reasons.includes('A conflicting normal NVDA process was detected.'));
+});
+
+test('probePrerequisites reports an installed library and absent selected asset independently', async () => {
+  const runtime = {
+    platform: 'win32',
+    env: { RUNTIME_A11Y_INTERACTIVE_DESKTOP: 'true' },
+    spawnSync: (command) => command === 'tasklist'
+      ? { stdout: '', stderr: '' }
+      : { stdout: '', stderr: '' },
+    dependencies: {
+      launchBrowser: async () => ({
+        version: () => '150.0.7871.127',
+        close: async () => {},
+      }),
+      importGuidepup: async () => ({
+        guidepupVersion: '0.34.0',
+        nvda: {
+          version: '0.2.1-2026.2',
+          start: async () => {},
+          stop: async () => {},
+        },
+      }),
+      importGuidepupAssetProbe: async () => ({
+        isNVDAInstalled: () => false,
+      }),
+    },
+  };
+
+  const result = await probePrerequisites({}, runtime);
+
+  assert.equal(result.ok, false);
+  assert.equal(result.libraryInstalled, true);
+  assert.equal(result.selectedAssetInstalled, false);
+  assert.ok(result.reasons.some((reason) => reason.includes('@guidepup/setup@0.25.3 install nvda')));
 });
 
 test('probePrerequisites fails when launched Chrome cannot be closed', async () => {

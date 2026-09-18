@@ -57,10 +57,27 @@ test('walkthrough boundaries clamp, reset and reject malformed state', () => {
   assert.equal(states.second, 1);
 });
 
+test('fullscreen state and forced-colors behavior are part of the starter contract', () => {
+  const source = fs.readFileSync(path.join(__dirname, 'deck.js'), 'utf8');
+  const theme = fs.readFileSync(path.join(__dirname, 'theme.css'), 'utf8');
+  assert.match(html, /id="fullscreen-button" aria-pressed="false"/);
+  assert.match(source, /addEventListener\('fullscreenchange'/);
+  assert.match(source, /setAttribute\('aria-pressed', String\(active\)\)/);
+  assert.match(source, /if \(!active\) fullscreenButton\.focus\(\)/);
+  assert.match(theme, /@media \(forced-colors: active\)/);
+  assert.match(theme, /ButtonFace/);
+  assert.match(theme, /Highlight/);
+});
+
 test('deck initialization disables the unused cross-window API', () => {
   const source = fs.readFileSync(path.join(__dirname, 'deck.js'), 'utf8');
   assert.match(source, /postMessage:\s*false/);
   assert.match(source, /postMessageEvents:\s*false/);
+  assert.match(source, /setAttribute\('aria-roledescription', 'presentation'\)/);
+  assert.match(source, /setAttribute\('aria-roledescription', 'slide'\)/);
+  assert.match(source, /setAttribute\('aria-label', `\$\{section\.dataset\.title\}, \$\{index \+ 1\} of \$\{sections\.length\}`\)/);
+  assert.match(source, /setAttribute\('aria-current', 'page'\)/);
+  assert.match(source, /section\.inert = section !== current/);
 });
 
 test('displayed diff counts and question selections are consistent', () => {
