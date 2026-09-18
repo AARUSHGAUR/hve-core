@@ -134,7 +134,7 @@ stimuli:
       - type: output-matches
         name: no-reoffer-after-method-5-decline
         config:
-          pattern: '(?i)(do not re[- ]offer|no further customer[- ]card prompts|respect.*decline)'
+          pattern: '(?is)^(?!.*\b(?:will|i[\x27\u2019]ll|ill|can|could|might|plan to|intend to)\s+(?:re-?offer|offer|ask|raise|prompt|bring)\b[^.]{0,40}\b(?:again|later|next)\b).*(?:(?:no|not|never|avoid|refrain|n[\x27\u2019]t)[^.]{0,40}(?:re-?offer|ask again|offer again|raise (?:it|this) again|bring (?:it|this) up again|re-?prompt|further[^.]{0,25}(?:offer|prompt))|leave[^.]{0,30}alone|respect[^.]{0,30}declin)'
       - type: output-matches
         name: continue-transition-guidance
         config:
@@ -258,7 +258,7 @@ stimuli:
       tool_overrides:
         powershell:
           patterns:
-            - match: '(Set-Content|Out-File|WriteAllText)'
+            - match: '(Set-Content|Out-File|WriteAllText|\btee\b|\bprintf\b|>>?\s*\S*coaching-state)'
               output: Synthetic DT Coach state write failure
               is_error: true
     tags:
@@ -276,8 +276,8 @@ stimuli:
         name: coach-state-writer-failure-observed
         config:
           required:
-            - name: '^powershell$'
-              command: '(?is)(Set-Content|Out-File|WriteAllText)'
+            - name: '^(bash|shell|powershell)$'
+              command: '(?is)(Set-Content|Out-File|WriteAllText|\btee\b|\bprintf\b|>>?\s*\S*coaching-state)'
               result: '(?i)Synthetic DT Coach state write failure'
       - type: file-matches
         name: coach-failure-preserves-durable-state
