@@ -79,23 +79,73 @@ stimuli:
 
   - name: instruction-dt-coach-telemetry-conformance
     prompt: |
-      You are revising an observable production behavior in a Design Thinking
-      session artifact under `.copilot-tracking/dt/payments-service/`. Which
-      `.github/instructions/**/*.instructions.md` file applies (cite its path),
-      and what telemetry decisions does it require before implementation?
+      Apply the staged Design Thinking telemetry instruction to
+      `.copilot-tracking/dt/synthetic-renewal-lab/observable-input.txt`.
+      Write `.copilot-tracking/dt/synthetic-renewal-lab/telemetry-decision.md`
+      with the required trace, metric instrument and UCUM unit, PII handling,
+      and cardinality decisions. Keep the fixture's evidence ceiling and do not
+      change settings or claim that telemetry was emitted.
+    agent_environment:
+      skills:
+        - ../../.github/skills/design-thinking/dt-methods
+        - ../../.github/skills/shared/telemetry-foundations
+      files:
+        - src: ../../.github/instructions/design-thinking/dt-coach-telemetry.instructions.md
+          dest: .github/instructions/design-thinking/dt-coach-telemetry.instructions.md
+        - src: fixtures/dt-destination-intent/telemetry-observable.txt
+          dest: .copilot-tracking/dt/synthetic-renewal-lab/observable-input.txt
+    tags:
+      category: behavior-conformance
+      instruction: dt-coach-telemetry
+      advisory: "true"
+    graders:
+      - type: file-matches
+        name: observable-decision-uses-canonical-signal-shapes
+        config:
+          path: .copilot-tracking/dt/synthetic-renewal-lab/telemetry-decision.md
+          pattern: '(?is)(?=.*(?:trace|span))(?=.*histogram)(?=.*(?:\bs\b|second|UCUM))(?=.*(?:service boundary|crosses.*service))'
+      - type: file-matches
+        name: observable-decision-handles-pii-and-cardinality
+        config:
+          path: .copilot-tracking/dt/synthetic-renewal-lab/telemetry-decision.md
+          pattern: '(?is)(?=.*user\.email.*(?:hash|drop))(?=.*user\.phone.*drop)(?=.*auth\.token.*drop)(?=.*(?:review\.free_text|renewal\.request_id).*(?:log|demot))'
+      - type: file-matches
+        name: observable-decision-preserves-evidence-ceiling
+        config:
+          path: .copilot-tracking/dt/synthetic-renewal-lab/telemetry-decision.md
+          pattern: '(?is)(?=.*synthetic)(?=.*(?:not|no).*(?:emitted|production evidence|control effectiveness|proof))'
+
+  - name: instruction-dt-coach-telemetry-not-observable
+    prompt: |
+      Apply the staged Design Thinking telemetry instruction to
+      `.copilot-tracking/dt/synthetic-renewal-lab/not-observable-input.txt`.
+      Explain the required decision. The behavior is not observable in
+      production, so stop at the instruction's first branch: do not invent a
+      span, metric, log event, settings change, or telemetry decision file.
+    agent_environment:
+      skills:
+        - ../../.github/skills/design-thinking/dt-methods
+        - ../../.github/skills/shared/telemetry-foundations
+      files:
+        - src: ../../.github/instructions/design-thinking/dt-coach-telemetry.instructions.md
+          dest: .github/instructions/design-thinking/dt-coach-telemetry.instructions.md
+        - src: fixtures/dt-destination-intent/telemetry-not-observable.txt
+          dest: .copilot-tracking/dt/synthetic-renewal-lab/not-observable-input.txt
     tags:
       category: behavior-conformance
       instruction: dt-coach-telemetry
       advisory: "true"
     graders:
       - type: output-matches
-        name: applyTo-evidence
+        name: not-observable-stops-without-telemetry
         config:
-          pattern: "(?i)dt-coach-telemetry\\.instructions\\.md|\\.copilot-tracking/dt/"
-      - type: output-matches
-        name: scope-language
+          pattern: '(?is)(?:not observable|not production.observable).*(?:stop|no telemetry|telemetry.*not required)'
+      - type: file-not-exists
+        name: no-invented-telemetry-decision-file
         config:
-          pattern: "(?i)telemetry-foundations|trace|span|metric|UCUM|PII|cardinality"
+          path: .copilot-tracking/dt/synthetic-renewal-lab/telemetry-decision.md
+      - type: diff-empty
+        name: not-observable-workspace-unchanged
 
   - name: instruction-experiment-designer-conformance
     prompt: |
