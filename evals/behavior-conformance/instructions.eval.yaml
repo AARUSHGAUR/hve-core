@@ -1469,6 +1469,34 @@ stimuli:
           pattern: '(?i)--require-author-tag'
           negate: true
 
+  - name: instruction-mural-writeback-hygiene-conformance
+    prompt: |
+      A Mural extractor is closing a workshop and needs to update an existing
+      AI-authored widget whose tags have drifted from the saved manifest. Which
+      Mural instruction governs writeback, which fields may change, and how
+      must reserved tags and participant-added tags be protected?
+    tags:
+      category: behavior-conformance
+      instruction: mural-writeback-hygiene
+      advisory: "true"
+    graders:
+      - type: output-matches
+        name: mural-hygiene-instruction
+        config:
+          pattern: '(?i)mural-writeback-hygiene\.instructions\.md|Mural Writeback Hygiene'
+      - type: output-matches
+        name: mural-hygiene-stable-fields
+        config:
+          pattern: '(?is)(tags).*(hyperlink).*(parentId|parent id).*(never|do not|must not).{0,80}(text)'
+      - type: output-matches
+        name: mural-hygiene-reserved-tag-protection
+        config:
+          pattern: '(?i)(authored-by-ai|reserved tag).{0,160}--force-reserved'
+      - type: output-matches
+        name: mural-hygiene-additive-repair
+        config:
+          pattern: '(?is)(_ensure_tag_manifest|repair-tag-drift|tag manifest).{0,160}(additive|does not strip|missing)'
+
   - name: instruction-mural-destination-routing-conformance
     prompt: |
       A Mural extractor has a hydrated synthetic action record but the caller
