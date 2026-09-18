@@ -604,7 +604,7 @@ function Compare-GraderLineageRecords {
 function Assert-GraderLineageRevisions {
     <#
     .SYNOPSIS
-        Validates revision reachability, provenance equivalence, and ordering.
+        Validates revision reachability, ordering, and provenance equivalence.
     #>
     [CmdletBinding()]
     param(
@@ -625,15 +625,6 @@ function Assert-GraderLineageRevisions {
     foreach ($revision in @($SourceProvenanceRevision, $SourceRevision, $TargetRevision)) {
         [void](Invoke-LineageGit -RepoRoot $RepoRoot -Arguments @('cat-file', '-e', "$revision^{commit}"))
     }
-
-    & git -C $RepoRoot diff --quiet $SourceProvenanceRevision $SourceRevision -- @script:LineageRoots
-    if ($LASTEXITCODE -eq 1) {
-        throw "Source revision '$SourceRevision' does not match provenance '$SourceProvenanceRevision' for lineage inputs."
-    }
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Git failed while verifying source provenance equivalence.'
-    }
-
     foreach ($revision in @($SourceRevision, $TargetRevision)) {
         & git -C $RepoRoot merge-base --is-ancestor $revision $head
         if ($LASTEXITCODE -ne 0) {
@@ -645,6 +636,13 @@ function Assert-GraderLineageRevisions {
         throw "Source revision '$SourceRevision' is not an ancestor of target revision '$TargetRevision'."
     }
 
+    & git -C $RepoRoot diff --quiet $SourceProvenanceRevision $SourceRevision -- @script:LineageRoots
+    if ($LASTEXITCODE -eq 1) {
+        throw "Source revision '$SourceRevision' does not match provenance '$SourceProvenanceRevision' for lineage inputs."
+    }
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Git failed while verifying source provenance equivalence.'
+    }
 }
 
 function Get-GraderRecordSetSha256 {
