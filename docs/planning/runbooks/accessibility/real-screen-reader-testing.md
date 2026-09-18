@@ -2,7 +2,7 @@
 title: Real screen reader testing
 description: Shared guidance for human-led real assistive technology testing, evidence capture, and release gating.
 author: Microsoft
-ms.date: 2026-09-17
+ms.date: 2026-09-18
 ms.topic: how-to
 keywords:
   - accessibility
