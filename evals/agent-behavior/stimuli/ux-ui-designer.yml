@@ -344,7 +344,7 @@ stimuli:
       - type: output-matches
         name: missing-dependency-remediation
         config:
-          pattern: '(?is)deps_missing.*(?:dependenc|setup).*(?:pause|stop|retry)'
+          pattern: '(?is)deps_missing.*(?:dependency|dependencies|setup).*(?:pause|stop|retry)'
       - type: tool-calls
         name: no-mural-call-after-non-ready-verdict
         config:

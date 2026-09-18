@@ -307,7 +307,7 @@ stimuli:
       - type: output-matches
         name: reports-scope-remediation
         config:
-          pattern: '(?i)(needs_scope_upgrade|missing.{0,30}scope|reauthoriz).{0,160}(pause|stop|retry)'
+          pattern: '(?i)(needs_scope_upgrade|missing.{0,30}scope|reauthorize).{0,160}(pause|stop|retry)'
       - type: tool-calls
         name: no-mural-call-after-non-ready-verdict
         config:

@@ -108,7 +108,7 @@ stimuli:
         name: observable-decision-handles-pii-and-cardinality
         config:
           path: .copilot-tracking/dt/synthetic-renewal-lab/telemetry-decision.md
-          pattern: '(?is)(?=.*user\.email.*(?:hash|drop))(?=.*user\.phone.*drop)(?=.*auth\.token.*drop)(?=.*(?:review\.free_text|renewal\.request_id).*(?:log|demot))'
+          pattern: '(?is)(?=.*user\.email.*(?:hash|drop))(?=.*user\.phone.*drop)(?=.*auth\.token.*drop)(?=.*(?:review\.free_text|renewal\.request_id).*(?:log|demote|demoted))'
       - type: file-matches
         name: observable-decision-preserves-evidence-ceiling
         config:

@@ -3334,7 +3334,7 @@ stimuli:
         config:
           pattern: '(?is)(declin).*(?:no change|not changed|no write|preserv).*(?:manual|settings editor|apply yourself)'
 
-  - name: skill-copilot-otel-metrics-second-write-reapproval
+  - name: skill-copilot-otel-metrics-second-write-new-approval
     turns:
       - |
         Use the staged synthetic settings evidence. Treat the first proposed
@@ -3367,7 +3367,7 @@ stimuli:
         config:
           pattern: '(?is)(captureContent).*(?:pending|not applied|unchanged|awaiting).*(?:approval|confirmation|answer)'
       - type: diff-empty
-        name: conversational-reapproval-case-writes-no-file
+        name: conversational-new-approval-case-writes-no-file
 
   - name: skill-copilot-otel-metrics-profile-policy-ambiguity
     prompt: |

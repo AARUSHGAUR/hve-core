@@ -514,7 +514,7 @@ stimuli:
       - type: output-matches
         name: failure-and-recovery-reported
         config:
-          pattern: '(?is)(authenticat).*(?:fail|unavailable|required).*(?:reconnect|sign in|oauth|retry)'
+          pattern: '(?is)(authentication|authenticate).*(?:fail|unavailable|required).*(?:reconnect|sign in|oauth|retry)'
       - type: output-matches
         name: no-false-auth-success
         config:
