@@ -83,7 +83,7 @@ export default function VpatPage(): React.ReactElement {
             Manual and assistive-technology review is incomplete. Screen-reader results come from an advisory sample of representative journeys on a prepared host, not from exhaustive coverage of the site, and advisory sampling is never promoted to a conformance outcome on its own.
           </p>
           <p>
-            Statuses in this report describe the capabilities the site is built and configured for, bound to the assessment date, scope, and methods named above. They are not a claim that every criterion has been verified on the current revision.
+            Statuses in this report describe the capabilities the site is built and configured for, bound to the scope and methods named above. They are not a claim that every criterion has been verified on the current revision, and they are not bound to an assessment date unless a current validation projection publishing that date accompanies them.
           </p>
         </section>
 

@@ -991,14 +991,14 @@ def _authorization_config(
     }
 
 
-def test_given_omitted_filter_when_bound_recipes_exist_then_only_authored_are_authorized() -> None:
+def test_given_omitted_filter_when_bound_recipes_exist_then_only_authored() -> None:
     # Bound recipes take live desktop control, so an unfiltered run must not reach them.
     config = _authorization_config([{"id": "authored-one"}], ["bound-one", "bound-two"])
 
     assert cli._resolve_calibration_journey_ids(config, []) == ["authored-one"]
 
 
-def test_given_omitted_filter_and_no_authored_journeys_then_bound_ids_must_be_requested() -> None:
+def test_given_omitted_filter_and_no_authored_then_bound_ids_requested() -> None:
     config = _authorization_config([], ["bound-one", "bound-two"])
 
     with pytest.raises(ScriptError) as error:

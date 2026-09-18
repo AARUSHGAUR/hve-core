@@ -460,7 +460,9 @@ def test_given_release_scope_when_manual_result_missing_then_release_is_incomple
     assert bundle["scopeCompleteness"]["releaseEvidence"] == "incomplete"
 
 
-@pytest.mark.parametrize("status", ["FAIL", "CANT_TELL", "NOT_ASSESSED", "INAPPLICABLE"])
+@pytest.mark.parametrize(
+    "status", ["FAIL", "CANT_TELL", "NOT_ASSESSED", "INAPPLICABLE"]
+)
 def test_given_release_scope_when_deciding_result_is_adverse_then_incomplete(
     inputs: dict,
     status: str,
@@ -1245,8 +1247,19 @@ def test_given_conflicting_artifact_identity_when_collected_then_fails_closed() 
         {"sasToken": "sv=2021&sig=abcdefghijklmnopqrstuvwxyz0123456789"},
         {"connectionString": "AccountName=x;AccountKey=abcdef1234567890"},
         {"extensions": {"note": "sv=2021-08-06&sig=abcdefghijklmnopqrstuvwxyz012345"}},
-        {"extensions": {"note": "Authorization value Bearer abcdefghijklmnopqrstuvwxyz123456"}},
-        {"extensions": {"note": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVPmB92K27uhbUJU1p1r_wW1gFWFOEjXk"}},
+        {
+            "extensions": {
+                "note": "Authorization value Bearer abcdefghijklmnopqrstuvwxyz123456"
+            }
+        },
+        {
+            "extensions": {
+                "note": (
+                    "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0"
+                    ".dBjftJeZ4CVPmB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+                )
+            }
+        },
         {"extensions": {"note": "ghp_abcdefghijklmnopqrstuvwxyz0123456789"}},
         {"extensions": {"note": "AKIAIOSFODNN7EXAMPLE"}},
         {"extensions": {"note": "-----BEGIN RSA PRIVATE KEY-----"}},

@@ -2265,7 +2265,7 @@ def _resolve_calibration_journey_ids(
 def _assert_executed_journey_identity(
     payload: dict[str, Any], journey_ids: list[str]
 ) -> list[str]:
-    """Reject child output whose journey identity is absent or differs from the authorization."""
+    """Reject child output whose journey identity differs from authorization."""
     authorized = ", ".join(journey_ids)
     executed = payload.get("journeys")
     if not isinstance(executed, list) or not executed:
