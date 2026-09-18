@@ -27,8 +27,15 @@ Describe 'Build-GraderLineageMap.ps1' -Tag 'Unit' {
     }
 
     It 'Maps authored grader type <GraderType> to result kind <ExpectedKind>' -ForEach @(
+        @{ GraderType = 'diff-empty'; ExpectedKind = 'code' }
+        @{ GraderType = 'file-exists'; ExpectedKind = 'code' }
+        @{ GraderType = 'file-matches'; ExpectedKind = 'code' }
+        @{ GraderType = 'file-not-exists'; ExpectedKind = 'code' }
+        @{ GraderType = 'file-not-matches'; ExpectedKind = 'code' }
         @{ GraderType = 'output-matches'; ExpectedKind = 'code' }
         @{ GraderType = 'output-contains'; ExpectedKind = 'code' }
+        @{ GraderType = 'tool-calls'; ExpectedKind = 'code' }
+        @{ GraderType = 'transcript-matches'; ExpectedKind = 'code' }
         @{ GraderType = 'wall-time'; ExpectedKind = 'code' }
         @{ GraderType = 'prompt'; ExpectedKind = 'llm' }
         @{ GraderType = 'human'; ExpectedKind = 'human' }

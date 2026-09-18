@@ -229,7 +229,18 @@ function Get-GraderResultKind {
     switch ($GraderType) {
         'prompt' { return 'llm' }
         'human' { return 'human' }
-        { $_ -in @('file-exists', 'file-matches', 'output-contains', 'output-matches', 'wall-time') } {
+        { $_ -in @(
+                'diff-empty',
+                'file-exists',
+                'file-matches',
+                'file-not-exists',
+                'file-not-matches',
+                'output-contains',
+                'output-matches',
+                'tool-calls',
+                'transcript-matches',
+                'wall-time'
+            ) } {
             return 'code'
         }
         default { throw "Unsupported grader type '$GraderType'." }
