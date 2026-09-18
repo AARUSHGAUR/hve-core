@@ -474,6 +474,7 @@ test('createScreenReaderDriver rejects action capture for a synthetic driver', a
 test('createGuidepupDriverAdapter derives profile identity from effective settings', async () => {
   const createAdapterForSettings = async (settings) => createGuidepupDriverAdapter({
     platform: 'win32',
+    libraryVersion: '0.34.0',
     target: {
       version: '0.2.1-2026.2',
       start: async () => undefined,
@@ -568,6 +569,7 @@ test('createGuidepupDriverAdapter tracks ownership and cleanup state for start/s
   const stopCalls = [];
   const adapter = await createGuidepupDriverAdapter({
     platform: 'win32',
+    libraryVersion: '0.34.0',
     target: {
       start: async (options) => {
         assert.equal(options.capture, true);

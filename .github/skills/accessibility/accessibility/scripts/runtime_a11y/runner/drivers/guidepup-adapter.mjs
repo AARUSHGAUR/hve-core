@@ -105,8 +105,7 @@ function buildProfileFingerprint(settings) {
   };
 }
 
-function buildMetadata(target, platform) {
-  const guidepupLibraryVersion = readGuidepupLibraryVersion();
+function buildMetadata(target, platform, guidepupLibraryVersion) {
   const nvdaAssetVersion = target?.version || null;
 
   return {
@@ -174,6 +173,7 @@ export async function createGuidepupDriverAdapter({
   platform = process.platform,
   config = {},
   target = null,
+  libraryVersion = readGuidepupLibraryVersion(),
   sleep = (durationMs) => new Promise((resolve) => setTimeout(resolve, durationMs)),
 } = {}) {
   const driver = selectDriver(platform);
@@ -207,7 +207,7 @@ export async function createGuidepupDriverAdapter({
     const expectedAnnouncements = Array.isArray(config?.expectedAnnouncements)
       ? config.expectedAnnouncements
       : [];
-    const metadata = buildMetadata(runtimeTarget, platform);
+    const metadata = buildMetadata(runtimeTarget, platform, libraryVersion);
     const lifecycle = config?.lifecycle || {};
     const startAttempts = resolvePositiveInteger(lifecycle.startAttempts, 2);
     const startRetryDelayMs = resolveNonNegativeInteger(lifecycle.startRetryDelayMs, 2000);
