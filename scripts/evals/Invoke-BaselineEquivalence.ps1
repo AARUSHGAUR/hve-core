@@ -129,7 +129,7 @@ param(
 
     [Parameter(Mandatory = $false)]
     [ValidateRange(1, 3600)]
-    [int]$ComparisonHeartbeatSeconds = 300,
+    [int]$ComparisonHeartbeatSeconds = 60,
 
     [Parameter(Mandatory = $false)]
     [switch]$NoBaselineCache
@@ -139,6 +139,7 @@ $ErrorActionPreference = 'Stop'
 
 Import-Module -Name (Join-Path $PSScriptRoot 'lib/EquivalenceParsing.psm1') -Force
 Import-Module -Name (Join-Path $PSScriptRoot 'lib/EquivalenceEnvironment.psm1') -Force
+Import-Module -Name (Join-Path $PSScriptRoot 'Modules/VallyRunner.psm1') -Force
 
 #region Helper Functions
 
@@ -474,122 +475,6 @@ function Get-VallyExecutionDiagnostic {
         }
     )
     return $result
-}
-
-function Invoke-VallyCommandWithCapture {
-    [CmdletBinding()]
-    [OutputType([hashtable])]
-    param(
-        [Parameter(Mandatory)]
-        [string[]]$Arguments,
-        [string]$LogPath,
-        [string]$Command = 'vally',
-        [string]$Model = 'unknown',
-        [ValidateRange(1, 3600)]
-        [int]$HeartbeatIntervalSeconds = 300,
-        [scriptblock]$ShouldCancel
-    )
-
-    $wrapper = @'
-$commandName = $args[0]
-$commandArguments = if ($args.Count -gt 1) { @($args[1..($args.Count - 1)]) } else { @() }
-$exitCode = 0
-try {
-    & $commandName @commandArguments 2>&1
-    if ($null -ne $LASTEXITCODE) { $exitCode = $LASTEXITCODE }
-}
-catch {
-    Write-Error -ErrorAction Continue $_
-    $exitCode = 1
-}
-exit $exitCode
-'@
-
-    $commandInfo = Get-Command -Name $Command -ErrorAction Stop
-    $resolvedCommand = if ($commandInfo.CommandType -eq [System.Management.Automation.CommandTypes]::Alias) {
-        [string]$commandInfo.Definition
-    }
-    elseif ($commandInfo.CommandType -in @(
-            [System.Management.Automation.CommandTypes]::Application,
-            [System.Management.Automation.CommandTypes]::ExternalScript)) {
-        [string]$commandInfo.Source
-    }
-    else {
-        $Command
-    }
-
-    $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
-    $startInfo.FileName = (Get-Command pwsh -ErrorAction Stop).Source
-    $startInfo.UseShellExecute = $false
-    $startInfo.CreateNoWindow = $true
-    $startInfo.RedirectStandardOutput = $true
-    $startInfo.RedirectStandardError = $true
-    $startInfo.StandardOutputEncoding = [System.Text.Encoding]::UTF8
-    $startInfo.StandardErrorEncoding = [System.Text.Encoding]::UTF8
-    $startInfo.ArgumentList.Add('-NoProfile')
-    $startInfo.ArgumentList.Add('-CommandWithArgs')
-    $startInfo.ArgumentList.Add($wrapper)
-    $startInfo.ArgumentList.Add($resolvedCommand)
-    foreach ($argument in $Arguments) { $startInfo.ArgumentList.Add($argument) }
-
-    $process = [System.Diagnostics.Process]::new()
-    $process.StartInfo = $startInfo
-    $started = $false
-    $prev = [Console]::OutputEncoding
-    try {
-        [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-        if (-not $process.Start()) { throw "Could not start command '$Command'." }
-        $started = $true
-        $standardOutput = $process.StandardOutput.ReadToEndAsync()
-        $standardError = $process.StandardError.ReadToEndAsync()
-        $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
-        $nextHeartbeat = $HeartbeatIntervalSeconds
-        Write-Host "Equivalence phase-start: model=$Model phase=compare attempt=1 elapsedSeconds=0" -ForegroundColor DarkGray
-
-        while (-not $process.WaitForExit(250)) {
-            if ($ShouldCancel -and (& $ShouldCancel)) {
-                throw [System.OperationCanceledException]::new('Comparison command execution was interrupted.')
-            }
-            if ($stopwatch.Elapsed.TotalSeconds -ge $nextHeartbeat) {
-                $elapsedSeconds = [math]::Floor($stopwatch.Elapsed.TotalSeconds)
-                Write-Host "Equivalence heartbeat: model=$Model phase=compare attempt=1 elapsedSeconds=$elapsedSeconds" -ForegroundColor DarkGray
-                $nextHeartbeat += $HeartbeatIntervalSeconds
-            }
-        }
-
-        $process.WaitForExit()
-        $code = $process.ExitCode
-        $stdoutText = $standardOutput.GetAwaiter().GetResult()
-        $stderrText = $standardError.GetAwaiter().GetResult()
-        $elapsedSeconds = [math]::Floor($stopwatch.Elapsed.TotalSeconds)
-        Write-Host "Equivalence phase-complete: model=$Model phase=compare attempt=1 elapsedSeconds=$elapsedSeconds" -ForegroundColor DarkGray
-    }
-    finally {
-        if ($started -and -not $process.HasExited) {
-            $process.Kill($true)
-            $process.WaitForExit()
-        }
-        $process.Dispose()
-        [Console]::OutputEncoding = $prev
-    }
-
-    $lines = @(
-        foreach ($text in @($stdoutText, $stderrText)) {
-            if ([string]::IsNullOrEmpty($text)) { continue }
-            @($text -split '\r?\n') | Where-Object { $_.Length -gt 0 }
-        }
-    )
-    foreach ($line in $lines) { Write-Host $line }
-
-    if ($LogPath) {
-        $dir = Split-Path -Parent $LogPath
-        if ($dir -and -not (Test-Path -LiteralPath $dir)) {
-            New-Item -ItemType Directory -Path $dir -Force | Out-Null
-        }
-        Set-Content -LiteralPath $LogPath -Value $lines -Encoding utf8NoBOM
-    }
-
-    return @{ ExitCode = $code; Lines = $lines }
 }
 
 function Get-CanonicalStimulusPolicy {
@@ -1052,6 +937,7 @@ if ($MyInvocation.InvocationName -ne '.') {
         $invocationEvidence = [System.Collections.Generic.List[object]]::new()
         $invocationFailures = 0
         $comparisonCalibration = [System.Collections.Generic.List[object]]::new()
+        $phaseTimings = [System.Collections.Generic.List[object]]::new()
 
         # Policy and invariant membership come from the canonical library, because the
         # comparison JSONL identifies stimuli by name only.
@@ -1108,6 +994,9 @@ if ($MyInvocation.InvocationName -ne '.') {
             }
             $surfaceGitHub = Join-Path $surfaceRoot '.github'
             New-Item -ItemType Directory -Path $surfaceRoot -Force | Out-Null
+            $materializeStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+            $materializeExitCategory = 'unknown'
+            Write-Host "Vally progress: event=phase-start phase=materialize worker=$model attempt=1 elapsedSeconds=0 exitCategory=unknown" -ForegroundColor DarkGray
             try {
                 $customized = New-CustomizedEnvironment `
                     -RepoRoot $resolvedRoot `
@@ -1117,6 +1006,7 @@ if ($MyInvocation.InvocationName -ne '.') {
                 $variantB.applied = @($customized.Applied)
                 $variants.b = $variantB
                 Write-Host "   Customized surface: $($customized.Applied.Count) artifact(s)" -ForegroundColor DarkGray
+                $materializeExitCategory = 'success'
             }
             catch {
                 # A customized environment that cannot be built is a divergence failure,
@@ -1129,6 +1019,15 @@ if ($MyInvocation.InvocationName -ne '.') {
                 }
             }
             finally {
+                $materializeStopwatch.Stop()
+                Write-Host "Vally progress: event=phase-complete phase=materialize worker=$model attempt=1 elapsedSeconds=$([math]::Floor($materializeStopwatch.Elapsed.TotalSeconds)) exitCategory=$materializeExitCategory" -ForegroundColor DarkGray
+                $phaseTimings.Add([ordered]@{
+                        phase          = 'materialize'
+                        worker         = $model
+                        attempt        = 1
+                        elapsedSeconds = [math]::Round($materializeStopwatch.Elapsed.TotalSeconds, 3)
+                        exitCategory   = $materializeExitCategory
+                    })
                 # Materialization clears this tree, so the tracked placeholder is restored
                 # after it rather than before. vally's spec linter resolves the path, so a
                 # completed or aborted run must both leave the directory present and the
@@ -1196,7 +1095,22 @@ if ($MyInvocation.InvocationName -ne '.') {
                 }
             }
             else {
-                $codeA = Invoke-VallyCommand -Arguments $evalBaseline
+                $baselineLog = Join-Path $resolvedRoot "logs/vally-eval-$model-$runId-baseline.log"
+                $baselineProcess = Invoke-VallyProcess `
+                    -Arguments $evalBaseline `
+                    -LogPath $baselineLog `
+                    -Phase 'baseline-eval' `
+                    -Worker $model `
+                    -Attempt 1 `
+                    -HeartbeatIntervalSeconds $ComparisonHeartbeatSeconds
+                $codeA = $baselineProcess.ExitCode
+                $phaseTimings.Add([ordered]@{
+                        phase          = 'baseline-eval'
+                        worker         = $baselineProcess.Worker
+                        attempt        = 1
+                        elapsedSeconds = [math]::Round($baselineProcess.ElapsedMilliseconds / 1000, 3)
+                        exitCategory   = $baselineProcess.ExitCategory
+                    })
                 $baselineRunDir = Resolve-LatestRunDir -OutputDir $aDir
                 $executionDiagnostics.Add((Get-VallyExecutionDiagnostic -RunDir $baselineRunDir -Model $model -Variant baseline -Attempt 1 -ExitCode $codeA))
                 $baselineTally = Measure-DeclaredInvariantFailures -RunDir $baselineRunDir -InvariantNames $canonicalInvariants -ExpectedManifest $invariantManifest -ExpectedTrials $baselineTrials
@@ -1238,7 +1152,22 @@ if ($MyInvocation.InvocationName -ne '.') {
 
             $aRunDir = $baselineRunDir
             $customizedAttempt = 1
-            $codeB = Invoke-VallyCommand -Arguments $evalCustomized
+            $customizedLog = Join-Path $resolvedRoot "logs/vally-eval-$model-$runId-customized.log"
+            $customizedProcess = Invoke-VallyProcess `
+                -Arguments $evalCustomized `
+                -LogPath $customizedLog `
+                -Phase 'customized-eval' `
+                -Worker $model `
+                -Attempt $customizedAttempt `
+                -HeartbeatIntervalSeconds $ComparisonHeartbeatSeconds
+            $codeB = $customizedProcess.ExitCode
+            $phaseTimings.Add([ordered]@{
+                    phase          = 'customized-eval'
+                    worker         = $customizedProcess.Worker
+                    attempt        = $customizedAttempt
+                    elapsedSeconds = [math]::Round($customizedProcess.ElapsedMilliseconds / 1000, 3)
+                    exitCategory   = $customizedProcess.ExitCategory
+                })
             $bRunDir = Resolve-LatestRunDir -OutputDir $bDir
             $customizedDiagnostic = Get-VallyExecutionDiagnostic -RunDir $bRunDir -Model $model -Variant customized -Attempt $customizedAttempt -ExitCode $codeB
             $executionDiagnostics.Add($customizedDiagnostic)
@@ -1272,7 +1201,22 @@ if ($MyInvocation.InvocationName -ne '.') {
                 Write-Host "   Agent invocation: retrying one complete customized $model calibration run after eligible incomplete evidence" -ForegroundColor Yellow
                 $customizedAttempt++
                 $firstCustomizedRunDir = $bRunDir
-                $codeB = Invoke-VallyCommand -Arguments $evalCustomized
+                $customizedProcess = Invoke-VallyProcess `
+                    -Arguments $evalCustomized `
+                    -LogPath $customizedLog `
+                    -AppendLog `
+                    -Phase 'customized-eval' `
+                    -Worker $model `
+                    -Attempt $customizedAttempt `
+                    -HeartbeatIntervalSeconds $ComparisonHeartbeatSeconds
+                $codeB = $customizedProcess.ExitCode
+                $phaseTimings.Add([ordered]@{
+                        phase          = 'customized-eval'
+                        worker         = $customizedProcess.Worker
+                        attempt        = $customizedAttempt
+                        elapsedSeconds = [math]::Round($customizedProcess.ElapsedMilliseconds / 1000, 3)
+                        exitCategory   = $customizedProcess.ExitCategory
+                    })
                 $retryRunDir = Resolve-LatestRunDir -OutputDir $bDir
                 $bRunDir = if ($retryRunDir -and $retryRunDir -ne $firstCustomizedRunDir) {
                     $retryRunDir
@@ -1384,11 +1328,20 @@ if ($MyInvocation.InvocationName -ne '.') {
                     '--output', $compareJsonlPath
                 )
                 $compareLog = Join-Path $resolvedRoot "logs/vally-compare-$model-$runId.log"
-                $resultC = Invoke-VallyCommandWithCapture `
+                $resultC = Invoke-VallyProcess `
                     -Arguments $compareArgs `
                     -LogPath $compareLog `
-                    -Model $model `
+                    -Phase 'compare' `
+                    -Worker $model `
+                    -Attempt 1 `
                     -HeartbeatIntervalSeconds $ComparisonHeartbeatSeconds
+                $phaseTimings.Add([ordered]@{
+                        phase          = 'compare'
+                        worker         = $resultC.Worker
+                        attempt        = 1
+                        elapsedSeconds = [math]::Round($resultC.ElapsedMilliseconds / 1000, 3)
+                        exitCategory   = $resultC.ExitCategory
+                    })
                 $compareFailed = $resultC.ExitCode -ne 0
                 if ($compareFailed) { $runHealthFailures++ }
                 $compareLogs.Add($compareLog)
@@ -1518,6 +1471,7 @@ if ($MyInvocation.InvocationName -ne '.') {
             verdict                  = $verdict
             variants                 = $variants
             compareLogs              = @($compareLogs)
+            phaseTimings             = @($phaseTimings)
         }
 
         Write-SummaryJson -Summary $summary -Path $OutputPath

@@ -719,7 +719,7 @@ Describe 'Comparison judge pin' -Tag 'Unit' {
     }
 }
 
-Describe 'Invoke-VallyCommandWithCapture' -Tag 'Unit' {
+Describe 'Invoke-VallyProcess' -Tag 'Unit' {
     BeforeAll {
         . $script:ScriptPath
         $script:PwshPath = (Get-Command pwsh -ErrorAction Stop).Source
@@ -728,40 +728,51 @@ Describe 'Invoke-VallyCommandWithCapture' -Tag 'Unit' {
     BeforeEach {
         $script:CaptureStub = Join-Path $TestDrive "capture-$([guid]::NewGuid()).ps1"
         $script:CaptureLog = Join-Path $TestDrive "capture-$([guid]::NewGuid()).log"
-        $script:HostMessages = [System.Collections.Generic.List[string]]::new()
+        Set-Variable -Name VallyHostMessages -Scope Global -Value ([System.Collections.Generic.List[string]]::new())
         Mock Write-Host {
             param($Object)
-            $script:HostMessages.Add([string]$Object)
-        }
+            (Get-Variable -Name VallyHostMessages -Scope Global -ValueOnly).Add([string]$Object)
+        } -ModuleName VallyRunner
     }
 
-    It 'Preserves complete output, exact exit status, log contents, and sanitized heartbeats' {
+    It 'withholds complete output while preserving exit status and sanitized progress' {
         @'
 param([int]$DelayMilliseconds, [int]$ExitCode)
-Write-Output 'before-heartbeat'
+Write-Output 'UNTRUSTED_STDOUT_SENTINEL'
+[Console]::Error.WriteLine('UNTRUSTED_STDERR_SENTINEL')
+foreach ($indexValue in 1..200) {
+    Write-Output "stdout-$indexValue"
+    [Console]::Error.WriteLine("stderr-$indexValue")
+}
 Start-Sleep -Milliseconds $DelayMilliseconds
-Write-Output 'after-heartbeat'
 exit $ExitCode
 '@ | Set-Content -LiteralPath $script:CaptureStub -Encoding utf8NoBOM
 
-        $result = Invoke-VallyCommandWithCapture `
+        $result = Invoke-VallyProcess `
             -Command $script:PwshPath `
-            -Arguments @('-NoProfile', '-File', $script:CaptureStub, '1200', '7') `
+            -Arguments @('-NoProfile', '-File', $script:CaptureStub, '2200', '7') `
             -LogPath $script:CaptureLog `
-            -Model 'gpt-5.6-luna' `
+            -Phase 'compare' `
+            -Worker 'gpt-5.6-luna' `
             -HeartbeatIntervalSeconds 1
 
         $result.ExitCode | Should -Be 7
-        @($result.Lines) | Should -Be @('before-heartbeat', 'after-heartbeat')
-        @(Get-Content -LiteralPath $script:CaptureLog) | Should -Be @('before-heartbeat', 'after-heartbeat')
-        $heartbeats = @($script:HostMessages | Where-Object { $_ -like 'Equivalence heartbeat:*' })
+        $result.ExitCategory | Should -Be 'unknown'
+        $result.PSObject.Properties.Name | Should -Not -Contain 'Lines'
+        $withheld = @(Get-Content -LiteralPath $script:CaptureLog)
+        $withheld | Should -Contain 'UNTRUSTED_STDOUT_SENTINEL'
+        ($withheld -join "`n") | Should -Match 'UNTRUSTED_STDERR_SENTINEL'
+        $withheld | Should -Contain 'stdout-200'
+        ($withheld -join "`n") | Should -Match 'stderr-200'
+        $hostMessages = Get-Variable -Name VallyHostMessages -Scope Global -ValueOnly
+        ($hostMessages -join "`n") | Should -Not -Match 'UNTRUSTED_|stdout-|stderr-'
+        $heartbeats = @($hostMessages | Where-Object { $_ -like 'Vally progress: event=heartbeat*' })
         $heartbeats.Count | Should -BeGreaterOrEqual 1
         foreach ($heartbeat in $heartbeats) {
-            $heartbeat | Should -Match '^Equivalence heartbeat: model=gpt-5\.6-luna phase=compare attempt=1 elapsedSeconds=\d+$'
-            $heartbeat | Should -Not -Match 'before-heartbeat|after-heartbeat'
+            $heartbeat | Should -Match '^Vally progress: event=heartbeat phase=compare worker=gpt-5\.6-luna attempt=1 elapsedSeconds=\d+ exitCategory=unknown$'
         }
-        @($script:HostMessages | Where-Object { $_ -match '^Equivalence phase-start: model=gpt-5\.6-luna phase=compare attempt=1 elapsedSeconds=0$' }) | Should -HaveCount 1
-        @($script:HostMessages | Where-Object { $_ -match '^Equivalence phase-complete: model=gpt-5\.6-luna phase=compare attempt=1 elapsedSeconds=\d+$' }) | Should -HaveCount 1
+        @($hostMessages | Where-Object { $_ -match '^Vally progress: event=phase-start phase=compare worker=gpt-5\.6-luna attempt=1 elapsedSeconds=0 exitCategory=unknown$' }) | Should -HaveCount 1
+        @($hostMessages | Where-Object { $_ -match '^Vally progress: event=phase-complete phase=compare worker=gpt-5\.6-luna attempt=1 elapsedSeconds=\d+ exitCategory=unknown$' }) | Should -HaveCount 1
     }
 
     It 'Terminates the child process tree when interrupted' {
@@ -774,10 +785,11 @@ Start-Sleep -Seconds 30
         $script:PollCount = 0
 
         {
-            Invoke-VallyCommandWithCapture `
+            Invoke-VallyProcess `
                 -Command $script:PwshPath `
                 -Arguments @('-NoProfile', '-File', $script:CaptureStub, $pidPath) `
-                -Model 'claude-sonnet-5' `
+                -Phase 'compare' `
+                -Worker 'claude-sonnet-5' `
                 -HeartbeatIntervalSeconds 1 `
                 -ShouldCancel { (Test-Path -LiteralPath $pidPath) -and ((++$script:PollCount) -ge 2) }
         } | Should -Throw -ExpectedMessage '*interrupted*'
@@ -908,6 +920,10 @@ defaults:
         $summary.runHealthFailures | Should -Be 2
         $summary.runs | Should -Be 0
         $summary.verdict | Should -Be 'fail'
+        @($summary.phaseTimings.phase) | Should -Contain 'materialize'
+        @($summary.phaseTimings.phase) | Should -Contain 'baseline-eval'
+        @($summary.phaseTimings.phase) | Should -Contain 'customized-eval'
+        @($summary.phaseTimings.phase) | Should -Contain 'compare'
         $LASTEXITCODE | Should -Be 1
 
         $calls = @(Get-Content -LiteralPath $env:STUB_VALLY_CALL_LOG | ForEach-Object { , ($_ | ConvertFrom-Json) })

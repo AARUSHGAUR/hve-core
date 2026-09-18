@@ -112,6 +112,24 @@ Describe 'Merge-BaselineEquivalence.ps1' -Tag 'Unit' {
         $fragment.equivalence[0].trials | Should -Be 210
     }
 
+    It 'weights model means and win rates by contributed trials' {
+        Write-TestEnvelope -Path $script:GptPath -Model 'gpt-5.6-luna' -DriverRunId 'gpt-run' `
+            -Summary (New-TestSummary -Model 'gpt-5.6-luna' -Runs 100 -MeanScore 0.2 -WinRate 0.2)
+        Write-TestEnvelope -Path $script:ClaudePath -Model 'claude-sonnet-5' -DriverRunId 'claude-run' `
+            -Summary (New-TestSummary -Model 'claude-sonnet-5' -Runs 50 -MeanScore -0.1 -WinRate 0.05)
+
+        & $script:ScriptPath `
+            -EnvelopePath $script:GptPath, $script:ClaudePath `
+            -ExpectedWorkflowRunId '12345' -ExpectedWorkflowRunAttempt 1 `
+            -ExpectedHeadSha '0123456789abcdef0123456789abcdef01234567' `
+            -OutputPath $script:OutputPath -EvalSummaryPath $script:EvalSummaryPath
+
+        $LASTEXITCODE | Should -Be 0
+        $combined = Get-Content -LiteralPath $script:OutputPath -Raw | ConvertFrom-Json
+        $combined.meanScore | Should -Be 0.1
+        $combined.winRate | Should -Be 0.15
+    }
+
     It 'writes an explicit not-required reporting fragment without envelopes' {
         & $script:ScriptPath -NotRequired -OutputPath $script:OutputPath -EvalSummaryPath $script:EvalSummaryPath
 
@@ -254,14 +272,22 @@ Describe 'Eval validation workflow contract' -Tag 'Unit' {
     }
 
     It 'defines the exact bounded fixed-model matrix' {
-        $script:Workflow | Should -Match '(?s)equivalence-execute:.*?fail-fast: false.*?max-parallel: 2.*?model: gpt-5\.6-luna.*?model: claude-sonnet-5'
+        $script:Workflow | Should -Match '(?s)equivalence-execute:.*?fail-fast: false.*?max-parallel: \$\{\{ inputs\.baseline-max-parallel \}\}.*?model: gpt-5\.6-luna.*?model: claude-sonnet-5'
         $script:Workflow | Should -Match 'CalibrationModel \$env:SELECTED_MODEL'
     }
 
-    It 'uses one manifest-owned requirement decision and an authoritative fan-in' {
-        $script:Workflow | Should -Match 'equivalence-required: \$\{\{ steps\.artifact-manifest\.outputs\.equivalence-required \}\}'
-        $script:Workflow | Should -Match '(?s)equivalence-fan-in:.*?needs: \[eval-validation, content-moderation, equivalence-execute\]'
-        $script:Workflow | Should -Match '(?s)eval-report:.*?needs: \[eval-execute, equivalence-fan-in\]'
+    It 'uses one canonical plan for mixed execution and baseline applicability' {
+        $script:Workflow | Should -Match '(?s)agent-plan:.*?New-AgentEvalPlan\.ps1.*?execution-matrix=\$matrix.*?baseline-required='
+        $script:Workflow | Should -Match '(?s)eval-execute:.*?max-parallel: 6.*?matrix: \$\{\{ fromJSON\(needs\.agent-plan\.outputs\.execution-matrix\) \}\}'
+        $script:Workflow | Should -Match "needs\.agent-plan\.outputs\.baseline-required == 'true'"
+        $shardArguments = "'-PlanPath', 'logs/agent-eval-plan.json', '-ShardId', " + '$env:MATRIX_SHARD'
+        $script:Workflow | Should -Match ([regex]::Escape($shardArguments))
+    }
+
+    It 'makes global fan-in authoritative for reporting' {
+        $script:Workflow | Should -Match '(?s)eval-fan-in:.*?needs: \[eval-validation, agent-plan, eval-execute, equivalence-fan-in\]'
+        $script:Workflow | Should -Match '(?s)eval-fan-in:.*?Merge-EvalExecution\.ps1.*?Authoritative eval fan-in failed closed'
+        $script:Workflow | Should -Match '(?s)eval-report:.*?needs: \[eval-fan-in\].*?name: eval-authoritative'
     }
 
     It 'uploads unique model evidence and a distinct combined artifact' {
@@ -279,5 +305,6 @@ Describe 'Eval validation workflow contract' -Tag 'Unit' {
         $script:Workflow | Should -Match "throw 'Baseline equivalence fan-in failed closed\.'"
         $script:Workflow | Should -Match '(?s)Download isolated model evidence.*?continue-on-error: true.*?Merge expected model evidence'
         $script:Workflow | Should -Match '(?s)Upload combined equivalence evidence.*?if: always\(\).*?if-no-files-found: error'
+        $script:Workflow | Should -Match '(?s)Upload authoritative eval result.*?if: always\(\).*?if-no-files-found: error'
     }
 }

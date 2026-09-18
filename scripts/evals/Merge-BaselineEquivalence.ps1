@@ -27,6 +27,9 @@
     Expected agent slug. Defaults to rpi-agent.
 .PARAMETER ExpectedTier
     Expected equivalence tier. Defaults to calibration.
+.PARAMETER PlanPath
+    Optional canonical agent eval plan. When supplied, it must require baseline
+    equivalence and each envelope must carry its matching plan digest.
 .PARAMETER OutputPath
     Destination for the combined baseline-equivalence summary.
 .PARAMETER EvalSummaryPath
@@ -54,6 +57,7 @@ param(
     [string]$ExpectedHeadSha,
     [string]$ExpectedAgent = 'rpi-agent',
     [string]$ExpectedTier = 'calibration',
+    [string]$PlanPath,
     [string]$OutputPath,
     [string]$EvalSummaryPath,
     [string]$StatusPath,
@@ -63,6 +67,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 Import-Module (Join-Path $PSScriptRoot 'lib/EquivalenceParsing.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'Modules/VallyRunner.psm1') -Force
 
 #region Functions
 function Write-JsonDocument {
@@ -117,7 +122,8 @@ function Read-ModelEnvelope {
         [Parameter(Mandatory = $true)][int]$WorkflowRunAttempt,
         [Parameter(Mandatory = $true)][string]$HeadSha,
         [Parameter(Mandatory = $true)][string]$Agent,
-        [Parameter(Mandatory = $true)][string]$Tier
+        [Parameter(Mandatory = $true)][string]$Tier,
+        [string]$ExpectedPlanDigest
     )
 
     if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
@@ -155,6 +161,10 @@ function Read-ModelEnvelope {
     $driverRunId = [string](Assert-Property -InputObject $envelope -Name 'driverRunId' -Context $context)
     if ([string]::IsNullOrWhiteSpace($driverRunId)) { throw "$context has an empty driverRunId." }
     $producerExitCode = [int](Assert-Property -InputObject $envelope -Name 'producerExitCode' -Context $context)
+    if (-not [string]::IsNullOrWhiteSpace($ExpectedPlanDigest)) {
+        $planDigest = [string](Assert-Property -InputObject $envelope -Name 'planDigest' -Context $context)
+        if ($planDigest -cne $ExpectedPlanDigest) { throw "$context has a mismatched planDigest." }
+    }
 
     $summary = Assert-Property -InputObject $envelope -Name 'summary' -Context $context
     $summaryVersion = [string](Assert-Property -InputObject $summary -Name 'schemaVersion' -Context "$context summary")
@@ -199,74 +209,9 @@ function Merge-ModelSummaries {
     )
 
     $orderedEnvelopes = @($Envelope | Sort-Object { if ($_.selectedModel -eq 'gpt-5.6-luna') { 0 } else { 1 } })
-    $summaries = @($orderedEnvelopes | ForEach-Object { $_.summary })
-    $sum = {
-        param([string]$Name)
-        [double](($summaries | Measure-Object -Property $Name -Sum).Sum)
-    }
-    $average = {
-        param([string]$Name)
-        [double](($summaries | Measure-Object -Property $Name -Average).Average)
-    }
-
-    $runs = [int](& $sum 'runs')
-    $invariantFailures = [int](& $sum 'invariantFailures')
-    $runHealthFailures = [int](& $sum 'runHealthFailures')
-    $dataQualityViolations = [int](& $sum 'dataQualityViolations')
-    $equivalentTrials = [int](& $sum 'equivalentTrials')
-    $equivalentTies = [int](& $sum 'equivalentTies')
-    $divergenceGuardFailures = [int](& $sum 'divergenceGuardFailures')
-    $judgeErrors = [int](& $sum 'judgeErrors')
-    $gates = Get-EquivalenceGateResults `
-        -Runs $runs `
-        -InvariantFailures $invariantFailures `
-        -Tier ([string]$summaries[0].tier) `
-        -EquivalentTotal $equivalentTrials `
-        -TieRatio $(if ($equivalentTrials -gt 0) { $equivalentTies / $equivalentTrials } else { 0.0 }) `
-        -DataQualityViolations $dataQualityViolations `
-        -DivergenceGuardFailures $divergenceGuardFailures `
-        -DivergenceHasSignal (([int](& $sum 'divergenceGuardsEvaluated')) -gt 0) `
-        -RunHealthFailures $runHealthFailures
-
-    return [ordered]@{
-        schemaVersion             = '2.1.0'
-        agent                     = [string]$summaries[0].agent
-        tier                      = [string]$summaries[0].tier
-        model                     = 'gpt-5.6-luna'
-        models                    = @($orderedEnvelopes.selectedModel)
-        driverRunIds              = @($orderedEnvelopes.driverRunId)
-        runs                      = $runs
-        ties                      = [int](& $sum 'ties')
-        baselineWins              = [int](& $sum 'baselineWins')
-        treatmentWins             = [int](& $sum 'treatmentWins')
-        meanScore                 = [math]::Round((& $average 'meanScore'), 4)
-        ciLow                     = [math]::Round([double](($summaries | Measure-Object -Property ciLow -Maximum).Maximum), 4)
-        ciHigh                    = [math]::Round([double](($summaries | Measure-Object -Property ciHigh -Minimum).Minimum), 4)
-        winRate                   = [math]::Round((& $average 'winRate'), 4)
-        invariantFailures         = $invariantFailures
-        runHealthFailures         = $runHealthFailures
-        executionDiagnostics      = @($summaries.executionDiagnostics)
-        invocationEvidence        = @($summaries.invocationEvidence)
-        invocationFailures        = [int](& $sum 'invocationFailures')
-        divergenceGuardFailures   = $divergenceGuardFailures
-        divergenceGuardsEvaluated = [int](& $sum 'divergenceGuardsEvaluated')
-        failedDivergenceGuards    = @($summaries.failedDivergenceGuards)
-        dataQualityViolations     = $dataQualityViolations
-        judgeErrors               = $judgeErrors
-        judgeErrorRate            = if (($runs + $judgeErrors) -gt 0) { [math]::Round($judgeErrors / ($runs + $judgeErrors), 6) } else { 0.0 }
-        equivalentTrials          = $equivalentTrials
-        equivalentTies            = $equivalentTies
-        divergenceTrials          = [int](& $sum 'divergenceTrials')
-        tieRatio                  = if ($equivalentTrials -gt 0) { [math]::Round($equivalentTies / $equivalentTrials, 4) } else { 0.0 }
-        comparisonCalibration     = @($summaries.comparisonCalibration)
-        comparisonStatus          = 'report-only'
-        dataQualityDiagnostics    = @($summaries.dataQualityDiagnostics)
-        equivalenceGate           = $gates.EquivalenceGate
-        documentedDivergenceGate  = $gates.DocumentedDivergenceGate
-        verdict                   = $gates.Verdict
-        variants                  = $summaries[0].variants
-        compareLogs               = @($summaries.compareLogs)
-    }
+    return Merge-BaselineModelSummary `
+        -Summary @($orderedEnvelopes | ForEach-Object { $_.summary }) `
+        -DriverRunId @($orderedEnvelopes.driverRunId)
 }
 
 function New-EvalSummaryFragment {
@@ -404,6 +349,15 @@ if ($MyInvocation.InvocationName -ne '.') {
         }
         if ($EnvelopePath.Count -ne 2) { throw "Expected exactly two model envelopes; found $($EnvelopePath.Count)." }
 
+        $expectedPlanDigest = $null
+        if (-not [string]::IsNullOrWhiteSpace($PlanPath)) {
+            $plan = Get-Content -LiteralPath $PlanPath -Raw -Encoding utf8 | ConvertFrom-Json -Depth 50 -ErrorAction Stop
+            if (-not (Test-AgentEvalPlanDigest -Plan $plan) -or -not [bool]$plan.baseline.required) {
+                throw 'Canonical agent eval plan is invalid or does not require baseline equivalence.'
+            }
+            $expectedPlanDigest = [string]$plan.planDigest
+        }
+
         $envelopes = @(
             foreach ($path in $EnvelopePath) {
                 Read-ModelEnvelope `
@@ -412,7 +366,8 @@ if ($MyInvocation.InvocationName -ne '.') {
                     -WorkflowRunAttempt $ExpectedWorkflowRunAttempt `
                     -HeadSha $ExpectedHeadSha `
                     -Agent $ExpectedAgent `
-                    -Tier $ExpectedTier
+                    -Tier $ExpectedTier `
+                    -ExpectedPlanDigest $expectedPlanDigest
             }
         )
         $models = @($envelopes.selectedModel | Sort-Object -Unique)
