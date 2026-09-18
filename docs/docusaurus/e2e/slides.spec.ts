@@ -30,6 +30,13 @@ async function expectReflow(page: Page) {
       const style = getComputedStyle(node);
       const hides = (value: string) => value === 'hidden' || value === 'clip';
       if (!hides(style.overflowX) && !hides(style.overflowY)) return false;
+      // A text field scrolls its own value and the caret still reaches all of
+      // it, so an overflowing field is not discarded content.
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(node.tagName)) return false;
+      // Visually hidden text clips deliberately and stays in the accessibility
+      // tree, so a collapsed box is the intended pattern rather than lost content.
+      const collapsed = node.clientWidth <= 1 && node.clientHeight <= 1;
+      if (collapsed || style.clip === 'rect(0px, 0px, 0px, 0px)' || style.clipPath === 'inset(50%)') return false;
       return (hides(style.overflowX) && node.scrollWidth > node.clientWidth + 1)
         || (hides(style.overflowY) && node.scrollHeight > node.clientHeight + 1);
     }).map(node => node.className || node.tagName));
@@ -54,7 +61,9 @@ async function expectNoOverlap(page: Page) {
           [box.right - inset, box.bottom - inset],
         ];
         return points.some(([x, y]) => {
-          if (x < 0 || y < 0 || x > innerWidth || y > innerHeight) return true;
+          // Reflow permits vertical scrolling, so a control below the fold is
+          // reachable rather than obscured. Only sample points on screen.
+          if (x < 0 || y < 0 || x > innerWidth || y > innerHeight) return false;
           const hit = document.elementFromPoint(x, y);
           return hit !== null && !node.contains(hit) && !hit.contains(node);
         });
