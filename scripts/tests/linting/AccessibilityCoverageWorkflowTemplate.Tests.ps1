@@ -6,6 +6,9 @@ BeforeAll {
     $script:repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
     $script:templatePath = Join-Path $script:repoRoot '.github/skills/accessibility/accessibility/references/ci/accessibility-coverage.workflow-template.yml'
     $script:template = Get-Content -LiteralPath $script:templatePath -Raw
+    $script:workflow = ConvertFrom-Yaml -Yaml $script:template
+    $script:steps = @($script:workflow.jobs['runtime-accessibility'].steps)
+    $script:stepNames = @($script:steps | ForEach-Object { $_['name'] })
 }
 
 Describe 'Accessibility coverage workflow template' -Tag 'Unit' {
@@ -62,15 +65,58 @@ Describe 'Accessibility coverage workflow template' -Tag 'Unit' {
     }
 
     It 'Composes the bundle before staging it for retention' {
-        $composeIndex = $script:template.IndexOf('compose-evidence')
-        $manifestIndex = $script:template.IndexOf('emit-validation-manifest')
-        $stageIndex = $script:template.IndexOf('Stage accessibility evidence for retention')
-        $uploadIndex = $script:template.IndexOf('Upload accessibility evidence')
+        # Parsed step identity, not text order: a step merged into a prior run
+        # block still satisfies substring ordering while never executing.
+        $composeIndex = $script:stepNames.IndexOf('Compose accessibility evidence bundle')
+        $manifestIndex = $script:stepNames.IndexOf('Emit accessibility validation manifest')
+        $stageIndex = $script:stepNames.IndexOf('Stage accessibility evidence for retention')
+        $uploadIndex = $script:stepNames.IndexOf('Upload accessibility evidence')
 
         $composeIndex | Should -BeGreaterThan -1
         $manifestIndex | Should -BeGreaterThan $composeIndex
         $stageIndex | Should -BeGreaterThan $manifestIndex
         $uploadIndex | Should -BeGreaterThan $stageIndex
+    }
+
+    It 'Declares the manifest step with its own execution fields' {
+        $manifestStep = $script:steps | Where-Object { $_['name'] -eq 'Emit accessibility validation manifest' }
+        $manifestStep | Should -Not -BeNullOrEmpty
+        $manifestStep['if'] | Should -Be 'always()'
+        $manifestStep['run'] | Should -Match 'emit-validation-manifest'
+        $manifestStep['env'].Keys | Should -Contain 'VALIDATION_JOB_STATUS'
+    }
+
+    It 'Keeps every embedded Python program syntactically valid' {
+        $harness = Join-Path $script:repoRoot '.github/skills/accessibility/accessibility'
+        $blocks = [regex]::Matches(
+            ($script:steps | Where-Object { $_.ContainsKey('run') } | ForEach-Object { $_['run'] }) -join "`n",
+            "(?s)<<'PY'\r?\n(.*?)\r?\n\s*PY")
+        @($blocks).Count | Should -BeGreaterThan 0
+
+        foreach ($block in $blocks) {
+            $source = Join-Path ([System.IO.Path]::GetTempPath()) ((New-Guid).Guid + '.py')
+            try {
+                Set-Content -LiteralPath $source -Value $block.Groups[1].Value -Encoding utf8
+                $output = & uv run --project $harness python -c "import py_compile,sys; py_compile.compile(sys.argv[1], doraise=True)" $source 2>&1
+                $LASTEXITCODE | Should -Be 0 -Because "embedded Python must compile: $output"
+            }
+            finally {
+                Remove-Item -LiteralPath $source -Force -ErrorAction SilentlyContinue
+            }
+        }
+    }
+
+    It 'Validates staging containment before any recursive delete' {
+        $stageStep = $script:steps | Where-Object { $_['name'] -eq 'Stage accessibility evidence for retention' }
+        $run = $stageStep['run']
+        $guardIndex = $run.IndexOf('Refusing unsafe evidence staging path')
+        $deleteIndex = $run.IndexOf('rm -rf')
+
+        $guardIndex | Should -BeGreaterThan -1
+        $deleteIndex | Should -BeGreaterThan $guardIndex
+        $run | Should -Match 'must resolve inside the working directory'
+        $run | Should -Match 'Refusing a symlinked evidence staging directory'
+        $run | Should -Match 'rm -rf "\$resolved"'
     }
 
     It 'Emits a manifest from a frozen revision boundary and command artifact' {
@@ -103,8 +149,8 @@ Describe 'Accessibility coverage workflow template' -Tag 'Unit' {
     }
 
     It 'Stages a closed allowlist into a newly created empty directory' {
-        $script:template | Should -Match 'rm -rf "\$staging"'
-        $script:template | Should -Match 'mkdir -p "\$staging"'
+        $script:template | Should -Match 'rm -rf "\$resolved"'
+        $script:template | Should -Match 'mkdir -p "\$resolved"'
         foreach ($name in @(
                 'evidence-bundle.json',
                 'composition-summary.json',

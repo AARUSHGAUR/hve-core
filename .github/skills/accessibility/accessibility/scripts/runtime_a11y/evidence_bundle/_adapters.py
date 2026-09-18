@@ -88,6 +88,7 @@ def _run_all_envelope(
     asset_catalog: dict[str, Any],
     requirement_catalog: dict[str, Any],
     state_proofs: list[dict[str, Any]],
+    run_context: dict[str, Any],
 ) -> dict[str, Any]:
     if "schemaVersion" in source:
         raise ScriptError("Unsupported runtime_a11y run-all schema version", EXIT_USAGE)
@@ -160,6 +161,7 @@ def _run_all_envelope(
         "sourceRunId": f"run-all-{raw_digest[:20]}",
         "observedAt": source.get("runAt"),
         "sourceDigest": "",
+        "boundTo": _binding(run_context),
         "quarantined": bool(source.get("quarantined")),
         "quarantineReasons": [str(source["operationalFailure"])]
         if source.get("operationalFailure")
@@ -219,6 +221,7 @@ def _visual_envelope(
     expected_cells: list[dict[str, Any]],
     asset_catalog: dict[str, Any],
     state_proofs: list[dict[str, Any]],
+    run_context: dict[str, Any],
 ) -> dict[str, Any]:
     if (
         source.get("schemaVersion")
@@ -284,6 +287,7 @@ def _visual_envelope(
         "sourceRunId": source["runId"],
         "observedAt": source["createdAt"],
         "sourceDigest": "",
+        "boundTo": _binding(run_context),
         "results": results,
         "artifacts": artifacts,
     }
@@ -291,9 +295,18 @@ def _visual_envelope(
     return envelope
 
 
+_BINDING_FIELDS = ("sourceRevision", "buildDigest", "configDigest", "fixtureDigest")
+
+
+def _binding(run_context: dict[str, Any]) -> dict[str, Any]:
+    """Project the run context fields a source must be bound to."""
+    return {field: run_context[field] for field in _BINDING_FIELDS}
+
+
 def normalize_sources(
     sources: list[dict[str, Any]],
     *,
+    run_context: dict[str, Any],
     expected_cells: list[dict[str, Any]] | None = None,
     asset_catalog: dict[str, Any] | None = None,
     requirement_catalog: dict[str, Any] | None = None,
@@ -318,6 +331,7 @@ def normalize_sources(
                 asset_catalog,
                 requirement_catalog,
                 state_proofs or [],
+                run_context,
             )
         elif "probeOutcomes" in source and "evidenceState" in source:
             if expected_cells is None or asset_catalog is None:
@@ -325,13 +339,21 @@ def normalize_sources(
                     "visual adaptation requires catalog context", EXIT_USAGE
                 )
             envelope = _visual_envelope(
-                source, expected_cells, asset_catalog, state_proofs or []
+                source, expected_cells, asset_catalog, state_proofs or [], run_context
             )
         else:
             envelope = source
         validate_document(envelope, "evidence-source.schema.json")
         if envelope["sourceDigest"] != _source_digest(envelope):
             raise ScriptError("Evidence source digest mismatch", EXIT_USAGE)
+        # A self-consistent envelope from another revision must not speak for
+        # this run, so identity is compared before any result is indexed.
+        expected_binding = _binding(run_context)
+        for field, value in expected_binding.items():
+            if envelope["boundTo"].get(field) != value:
+                raise ScriptError(
+                    f"Evidence source is bound to a different {field}", EXIT_USAGE
+                )
         for result in envelope["results"]:
             normalized.append(
                 {

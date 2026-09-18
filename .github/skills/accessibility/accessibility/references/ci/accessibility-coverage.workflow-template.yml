@@ -312,12 +312,12 @@ jobs:
             --out "${{ env.TARGET_EVIDENCE_BUNDLE }}" \
             --require-completeness automated
 
-          - name: Emit accessibility validation manifest
-          if: always()
-          working-directory: ${{ env.TARGET_WORKDIR }}
-          env:
-            VALIDATION_JOB_STATUS: ${{ job.status }}
-          run: |
+      - name: Emit accessibility validation manifest
+        if: always()
+        working-directory: ${{ env.TARGET_WORKDIR }}
+        env:
+          VALIDATION_JOB_STATUS: ${{ job.status }}
+        run: |
             set -euo pipefail
             if [ ! -f "${{ env.TARGET_EVIDENCE_BUNDLE }}" ]; then
             echo "::notice::Validation manifest is inactive because no evidence bundle was composed."
@@ -432,8 +432,35 @@ jobs:
         run: |
           set -euo pipefail
           staging="${{ env.TARGET_EVIDENCE_STAGING }}"
-          rm -rf "$staging"
-          mkdir -p "$staging"
+          # Validate containment before any recursive delete: an adopter value of
+          # '.', '..', an absolute path or a symlinked parent would otherwise
+          # remove the checkout.
+          case "$staging" in
+            "" | "." | ".." | /* | ~*) echo "::error::Refusing unsafe evidence staging path: '$staging'"; exit 1 ;;
+          esac
+          case "$staging" in
+            */../* | ../* | */..) echo "::error::Refusing traversal in evidence staging path: '$staging'"; exit 1 ;;
+          esac
+          work_root="$(pwd -P)"
+          parent="$(dirname "$staging")"
+          mkdir -p "$parent"
+          resolved_parent="$(cd "$parent" && pwd -P)"
+          resolved="$resolved_parent/$(basename "$staging")"
+          if [ "$resolved" = "$work_root" ] || [ "$resolved" = "/" ]; then
+            echo "::error::Evidence staging must not resolve to the working directory or filesystem root."
+            exit 1
+          fi
+          case "$resolved/" in
+            "$work_root"/*) ;;
+            *) echo "::error::Evidence staging must resolve inside the working directory."; exit 1 ;;
+          esac
+          if [ -L "$resolved" ]; then
+            echo "::error::Refusing a symlinked evidence staging directory."
+            exit 1
+          fi
+          rm -rf "$resolved"
+          mkdir -p "$resolved"
+          staging="$resolved"
           if [ ! -f "${{ env.TARGET_EVIDENCE_BUNDLE }}" ]; then
             echo "::notice::No composed bundle to retain."
             exit 0
@@ -470,7 +497,7 @@ jobs:
               },
           }
 
-            def load_document(name: str) -> tuple[Path, dict]:
+          def load_document(name: str) -> tuple[Path, dict]:
               entry = allowlist[name]
               source = entry["source"]
               path = Path(source)
@@ -479,11 +506,11 @@ jobs:
               if path.is_symlink() or path.name.startswith("."):
                 raise SystemExit(f"Refusing to stage a symlink or hidden file: {source}")
               document = json.loads(path.read_text(encoding="utf-8"))
-                validate_retained_document(name, document)
+              validate_retained_document(name, document)
               reject_prohibited_content(document)
               return path, document
 
-            bundle_path, bundle = load_document("evidence-bundle.json")
+          bundle_path, bundle = load_document("evidence-bundle.json")
 
           completeness = bundle["scopeCompleteness"]
           classification = (
@@ -502,11 +529,11 @@ jobs:
           reject_prohibited_content(summary)
           validate_retained_document("composition-summary.json", summary)
 
-            shutil.copyfile(bundle_path, staging / "evidence-bundle.json")
-            for name in (
+          shutil.copyfile(bundle_path, staging / "evidence-bundle.json")
+          for name in (
               "accessibility-validation-manifest.json",
               "schema-validation-report.json",
-            ):
+          ):
               source, _ = load_document(name)
               shutil.copyfile(source, staging / name)
           (staging / "composition-summary.json").write_text(

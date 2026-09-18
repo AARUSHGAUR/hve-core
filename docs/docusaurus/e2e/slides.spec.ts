@@ -22,23 +22,58 @@ async function expectReflow(page: Page) {
       return box.width > 0 && (box.left < -1 || box.right > innerWidth + 1);
     }).map(node => node.className));
   expect(clipped).toEqual([]);
+
+  // A container that hides its own overflow discards content outright, which
+  // horizontal page width alone cannot detect.
+  const truncated = await page.locator('section.present').evaluate(section =>
+    [...section.querySelectorAll('*')].filter(node => {
+      const style = getComputedStyle(node);
+      const hides = (value: string) => value === 'hidden' || value === 'clip';
+      if (!hides(style.overflowX) && !hides(style.overflowY)) return false;
+      return (hides(style.overflowX) && node.scrollWidth > node.clientWidth + 1)
+        || (hides(style.overflowY) && node.scrollHeight > node.clientHeight + 1);
+    }).map(node => node.className || node.tagName));
+  expect(truncated).toEqual([]);
 }
 
 // Controls must not be hidden behind, or stacked on top of, slide content once
-// zoom shrinks the CSS viewport.
+// zoom shrinks the CSS viewport. Sampling the full rectangle rather than one
+// centre point catches a control that is only partially covered.
 async function expectNoOverlap(page: Page) {
   const overlapping = await page.evaluate(() => {
-    const controls = [...document.querySelectorAll('.deck-controls button, section.present [data-action]')]
-      .filter(node => node.getBoundingClientRect().width > 0);
-    return controls
+    const inset = 2;
+    return [...document.querySelectorAll('.deck-controls button, section.present [data-action]')]
+      .filter(node => node.getBoundingClientRect().width > 0)
       .filter(node => {
         const box = node.getBoundingClientRect();
-        const centre = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
-        return centre !== null && !node.contains(centre) && !centre.contains(node);
+        const points: [number, number][] = [
+          [box.left + box.width / 2, box.top + box.height / 2],
+          [box.left + inset, box.top + inset],
+          [box.right - inset, box.top + inset],
+          [box.left + inset, box.bottom - inset],
+          [box.right - inset, box.bottom - inset],
+        ];
+        return points.some(([x, y]) => {
+          if (x < 0 || y < 0 || x > innerWidth || y > innerHeight) return true;
+          const hit = document.elementFromPoint(x, y);
+          return hit !== null && !node.contains(hit) && !hit.contains(node);
+        });
       })
       .map(node => node.getAttribute('id') || node.getAttribute('data-action') || node.className);
   });
   expect(overlapping).toEqual([]);
+}
+
+// A focused control the user cannot fully see is not operable, even when the
+// page reports no horizontal overflow.
+async function expectFullyVisible(page: Page, target: ReturnType<Page['getByRole']>) {
+  const visible = await target.evaluate(element => {
+    const box = element.getBoundingClientRect();
+    return box.width > 0 && box.height > 0
+      && box.top >= -1 && box.left >= -1
+      && box.bottom <= innerHeight + 1 && box.right <= innerWidth + 1;
+  });
+  expect(visible).toBe(true);
 }
 
 async function expectFocusRingVisible(page: Page, target: ReturnType<Page['getByRole']>) {
@@ -238,6 +273,7 @@ test('every slide and walkthrough stays usable at 200 percent browser zoom', asy
     await nextSlide.focus();
     await expect(nextSlide).toBeFocused();
     await expectFocusRingVisible(page, nextSlide);
+    await expectFullyVisible(page, nextSlide);
     await nextSlide.press('Enter');
     await expect(page.locator('#announcement')).toHaveText(/Slide 2 of 26/);
 

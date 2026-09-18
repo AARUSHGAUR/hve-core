@@ -164,6 +164,17 @@ const CAPABILITY_RULES = Object.freeze({
   },
 });
 
+// A state whose whole point is an exposed control state is only decided by an
+// assertion that tests that state, not by any assertion from the same family.
+const STATE_PROPOSITIONS = Object.freeze({
+  fullscreen: {
+    describe: 'the fullscreen control must expose its pressed state',
+    satisfied: (execution) => (execution.assertions || []).some(
+      (assertion) => assertion?.expected && typeof assertion.expected.pressed === 'boolean',
+    ),
+  },
+});
+
 function assertionEvidenceTypes(execution) {
   return (execution.assertions || []).map((assertion) => assertion?.evidenceType || 'speech');
 }
@@ -207,13 +218,24 @@ function ruleGap(rule, execution) {
   return null;
 }
 
+// Speech is the only evidence a screen reader itself produces. Accessibility-tree
+// assertions describe what the browser exposes, so they cannot stand in for it.
+const SPEECH_EVIDENCE_TYPES = new Set(['speech', 'normalizedSpeech', 'actionSpeech', 'actionNormalizedSpeech']);
+
+function resolveEvidenceMethod(rule, execution) {
+  if (rule.resultSource === 'action-speech') return 'real-at';
+  return assertionEvidenceTypes(execution).some((type) => SPEECH_EVIDENCE_TYPES.has(type))
+    ? 'real-at'
+    : 'playwright';
+}
+
 export function materializeMethodCells(catalog, binding) {
   const cells = [];
   const uncovered = [];
   for (const entry of materializeBoundCases(catalog, binding)) {
-    const method = entry.requiredCapabilities.includes(METHOD_CAPABILITY) ? 'real-at' : 'playwright';
-    const probe = method === 'real-at' ? 'probe-screen-reader' : 'probe-browser-state';
+    const declaresRealAt = entry.requiredCapabilities.includes(METHOD_CAPABILITY);
     const declaredStates = entry.states || [];
+    let representativeCells = 0;
     for (const capability of entry.requiredCapabilities) {
       if (capability === METHOD_CAPABILITY) continue;
       const rule = CAPABILITY_RULES[capability];
@@ -223,7 +245,7 @@ export function materializeMethodCells(catalog, binding) {
       for (const state of declaredStates) {
         const matches = entry.executions.filter((execution) => execution.state === state);
         if (matches.length === 0) {
-          uncovered.push({ caseId: entry.caseId, state, capability, method, reason: 'No execution recipe covers this state.' });
+          uncovered.push({ caseId: entry.caseId, state, capability, method: declaresRealAt ? 'real-at' : 'playwright', reason: 'No execution recipe covers this state.' });
           continue;
         }
         // Complementary recipes may share a state, so each one that satisfies the
@@ -236,22 +258,38 @@ export function materializeMethodCells(catalog, binding) {
             gaps.push(`${execution.id} does not satisfy ${capability}: ${gap}`);
             continue;
           }
+          const proposition = STATE_PROPOSITIONS[state];
+          if (proposition && !proposition.satisfied(execution)) {
+            gaps.push(`${execution.id} does not decide the ${state} state: ${proposition.describe}`);
+            continue;
+          }
           covered = true;
+          const method = resolveEvidenceMethod(rule, execution);
+          if (method === 'real-at') representativeCells += 1;
           cells.push({
             caseId: entry.caseId,
             executionId: execution.id,
             state,
             capability,
             method,
-            probe,
+            probe: method === 'real-at' ? 'probe-screen-reader' : 'probe-browser-state',
             resultSource: rule.resultSource,
             stateProof: rule.stateProof,
           });
         }
         if (!covered) {
-          uncovered.push({ caseId: entry.caseId, state, capability, method, reason: `${gaps.join('; ')}.` });
+          uncovered.push({ caseId: entry.caseId, state, capability, method: declaresRealAt ? 'real-at' : 'playwright', reason: `${gaps.join('; ')}.` });
         }
       }
+    }
+    if (declaresRealAt && representativeCells === 0) {
+      uncovered.push({
+        caseId: entry.caseId,
+        state: declaredStates[0] || 'initial',
+        capability: METHOD_CAPABILITY,
+        method: 'real-at',
+        reason: 'No execution recipe decides this case with representative screen-reader evidence.',
+      });
     }
   }
   const seen = new Set();

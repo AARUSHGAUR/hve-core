@@ -4,7 +4,7 @@
   "title": "Accessibility evidence source envelope",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "sourceKind", "producer", "sourceRunId", "observedAt", "sourceDigest", "results"],
+  "required": ["schemaVersion", "sourceKind", "producer", "sourceRunId", "observedAt", "sourceDigest", "boundTo", "results"],
   "properties": {
     "schemaVersion": { "const": "1.0.0" },
     "sourceKind": { "enum": ["hve-probe", "playwright", "axe", "visual", "source", "state-proof"] },
@@ -12,6 +12,17 @@
     "sourceRunId": { "$ref": "#/$defs/id" },
     "observedAt": { "type": "string", "format": "date-time" },
     "sourceDigest": { "$ref": "#/$defs/digest" },
+    "boundTo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceRevision", "buildDigest", "configDigest", "fixtureDigest"],
+      "properties": {
+        "sourceRevision": { "type": "string", "minLength": 1 },
+        "buildDigest": { "$ref": "#/$defs/digest" },
+        "configDigest": { "$ref": "#/$defs/digest" },
+        "fixtureDigest": { "$ref": "#/$defs/digest" }
+      }
+    },
     "quarantined": { "type": "boolean", "default": false },
     "quarantineReasons": { "type": "array", "items": { "type": "string", "minLength": 1 } },
     "transcript": {

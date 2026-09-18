@@ -59,11 +59,33 @@ _FORBIDDEN_KEYS = frozenset(
         "privatekey",
         "secretkey",
         "signingkey",
+        "sastoken",
+        "sharedaccesssignature",
+        "connectionstring",
+        "githubtoken",
+        "ghtoken",
+        "pat",
+        "personalaccesstoken",
+        "clientassertion",
+        "awsaccesskeyid",
+        "awssecretaccesskey",
+        "sessionkey",
+        "certificate",
+        "pfx",
     }
 )
 _CREDENTIAL_PATTERN = re.compile(
     r"(?i)\b(?:password|passwd|api[-_ ]?key|access[-_ ]?token|"
     r"client[-_ ]?secret)\b\s*[:=]\s*\S+"
+    # Bounded shape detectors for carriers that need no labelling word.
+    r"|(?:^|[?&;])s(?:i)?g=[A-Za-z0-9%+/=]{16,}"
+    r"|\bSharedAccessSignature\b|\bAccountKey\s*=\s*\S+"
+    r"|\bBearer\s+[A-Za-z0-9\-._~+/]{20,}"
+    r"|\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"
+    r"|\bgh[pousr]_[A-Za-z0-9]{20,}"
+    r"|\bgithub_pat_[A-Za-z0-9_]{20,}"
+    r"|\bAKIA[0-9A-Z]{16}\b"
+    r"|-----BEGIN(?:[A-Z ]+)?PRIVATE KEY-----"
 )
 _DATETIME_KEYS = frozenset(
     {"composedAt", "generatedAt", "observedAt", "validUntil", "verifiedAt"}

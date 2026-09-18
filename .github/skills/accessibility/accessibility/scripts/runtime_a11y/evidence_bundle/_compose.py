@@ -517,6 +517,7 @@ def compose_evidence(
     )
     normalized = normalize_sources(
         sources,
+        run_context=run_context,
         expected_cells=expected,
         asset_catalog=asset_catalog,
         requirement_catalog=requirement_catalog,
@@ -588,6 +589,7 @@ def compose_evidence(
     automated_missing = False
     human_missing = False
     bundle_quarantined = False
+    adverse_cells: list[str] = []
     for cell in expected:
         if cell["human"]:
             supplement = approved.get(cell["cellId"])
@@ -627,6 +629,8 @@ def compose_evidence(
                         "reviewerId": supplement["reviewerId"],
                     }
                 )
+                if supplement["status"] != "PASS":
+                    adverse_cells.append(cell["cellId"])
             continue
         key = (cell["requirementId"], cell["journeyId"], cell["state"], cell["method"])
         matches = source_by_key.get(key, [])
@@ -635,6 +639,7 @@ def compose_evidence(
         ]
         if not current_matches:
             automated_missing = True
+            adverse_cells.append(cell["cellId"])
             results.append(
                 {
                     "resultId": f"result-{cell['cellId']}-missing",
@@ -713,6 +718,10 @@ def compose_evidence(
                     "state": "unresolved",
                 }
             )
+        # A release claim needs every deciding cell to actually pass. Presence of
+        # a current result says only that the cell was assessed.
+        if current_statuses != {"PASS"}:
+            adverse_cells.append(cell["cellId"])
     reviewer_state = "not-required"
     if any(cell["human"] for cell in expected):
         reviewer_state = (
@@ -725,6 +734,7 @@ def compose_evidence(
         release_state = (
             "complete"
             if not automated_missing
+            and not adverse_cells
             and reviewer_state in {"not-required", "complete"}
             and not conflicts
             and not bundle_quarantined
@@ -738,6 +748,11 @@ def compose_evidence(
     reasons: list[str] = []
     if automated_missing:
         reasons.append("Expected automated evidence is incomplete")
+    if adverse_cells:
+        reasons.append(
+            "Deciding evidence did not resolve to PASS for: "
+            + ", ".join(sorted(set(adverse_cells)))
+        )
     if reviewer_state in {"pending", "invalid"}:
         reasons.append(f"Reviewer evidence is {reviewer_state}")
     if registry_unanchored:

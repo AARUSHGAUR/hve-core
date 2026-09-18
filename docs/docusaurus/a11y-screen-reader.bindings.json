@@ -3,7 +3,7 @@
   "schemaVersion": "1.0.0",
   "bindingProfileId": "hve-core-site",
   "catalogId": "hve-screen-reader-cases",
-  "catalogDigest": "sha256:e4e210c4ac322344d8fa4c5f7a7ec469bfeef04690f966c9d26c233473a6f02a",
+  "catalogDigest": "sha256:30cd17362be7fe77e44a2aa254a34fd74771c16ede8e2affc3e94eb1790350d3",
   "product": { "name": "HVE Core public site", "surfaceProfiles": ["document", "presentation"] },
   "routes": {
     "home": "/hve-core/", "docs": "/hve-core/docs/", "search": "/hve-core/search/", "integrity": "/hve-core/accessibility/screen-reader-calibration.html",
@@ -120,7 +120,26 @@
         ]
       }]
     },
-    "HVE-NVDA-003": { "targetRefs": ["search.seeAll"] },
+    "HVE-NVDA-003": {
+      "targetRefs": ["search.seeAll"],
+      "executions": [{
+        "id": "hve-search-see-all-results", "title": "See all results is keyboard reachable from suggestions",
+        "route": "/hve-core/", "surfaceId": "homepage", "state": "suggestions",
+        "triggerAfterDriverStart": true,
+        "trigger": { "action": "press", "scope": "document", "value": "ArrowDown" },
+        "triggerSequence": [
+          { "action": "focus", "target": "input.navbar__search-input" },
+          { "action": "type", "target": "input.navbar__search-input", "value": "agent" },
+          { "action": "waitFor", "target": "[role='option']", "durationMs": 15000 },
+          { "action": "press", "scope": "document", "value": "ArrowDown" }
+        ],
+        "commands": [{ "kind": "key", "value": "End" }, { "kind": "pause", "durationMs": 500 }],
+        "assertions": [
+          { "type": "nodeMatches", "evidenceType": "accessibilityTree", "expected": { "role": "combobox", "expanded": true }, "minCount": 1, "maxCount": 1 },
+          { "type": "nodeMatches", "evidenceType": "accessibilityTree", "expected": { "role": "option", "selected": true }, "minCount": 1, "maxCount": 1 }
+        ]
+      }]
+    },
     "HVE-NVDA-004": {
       "targetRefs": ["home.banner", "home.install", "home.collections"],
       "executions": [{
@@ -175,6 +194,20 @@
           { "type": "nodeMatches", "evidenceType": "accessibilityTree", "expected": { "role": "textbox", "name": "Search" }, "minCount": 1, "maxCount": 1 },
           { "type": "nodeAbsent", "evidenceType": "accessibilityTree", "expected": { "role": "combobox", "expanded": true } }
         ]
+      }, {
+        "id": "hve-search-suggestions-state", "title": "Expanded search exposes no stale empty state",
+        "route": "/hve-core/", "surfaceId": "homepage", "state": "suggestions",
+        "trigger": { "action": "focus", "target": "input.navbar__search-input" },
+        "triggerSequence": [
+          { "action": "focus", "target": "input.navbar__search-input" },
+          { "action": "type", "target": "input.navbar__search-input", "value": "agent" },
+          { "action": "waitFor", "target": "[role='option']", "durationMs": 15000 }
+        ],
+        "commands": [{ "kind": "pause", "durationMs": 500 }],
+        "assertions": [
+          { "type": "nodeMatches", "evidenceType": "accessibilityTree", "expected": { "role": "combobox", "expanded": true }, "minCount": 1, "maxCount": 1 },
+          { "type": "nodeAbsent", "evidenceType": "accessibilityTree", "expected": { "role": "combobox", "expanded": false } }
+        ]
       }]
     },
     "HVE-NVDA-008": {
@@ -212,7 +245,35 @@
         "assertions": [{ "type": "nodeMatches", "evidenceType": "accessibilityTree", "expected": { "role": "button", "name": "Clear search" }, "minCount": 1, "maxCount": 1 }]
       }]
     },
-    "HVE-NVDA-010": { "targetRefs": ["search.status"] },
+    "HVE-NVDA-010": {
+      "targetRefs": ["search.status"],
+      "representativeAt": true,
+      "executions": [{
+        "id": "hve-search-status-results", "title": "Search results status announcement",
+        "route": "/hve-core/search/?q=agent", "surfaceId": "search-results", "state": "results",
+        "captureMode": "action", "triggerAfterDriverStart": true,
+        "trigger": { "action": "type", "target": "input[name='q']", "value": "agent" },
+        "triggerSequence": [
+          { "action": "click", "target": "input[name='q']" },
+          { "action": "type", "target": "input[name='q']", "value": "agent" },
+          { "action": "waitFor", "target": "#search-results-status[role='status']", "durationMs": 15000 }
+        ],
+        "commands": [{ "kind": "pause", "durationMs": 4000 }],
+        "assertions": [{ "type": "matches", "evidenceType": "actionSpeech", "value": "[0-9]+ documents? found" }]
+      }, {
+        "id": "hve-search-status-no-results", "title": "Empty search result status announcement",
+        "route": "/hve-core/search/?q=zzzqqq", "surfaceId": "search-results", "state": "no-results",
+        "captureMode": "action", "triggerAfterDriverStart": true,
+        "trigger": { "action": "type", "target": "input[name='q']", "value": "zzzqqq" },
+        "triggerSequence": [
+          { "action": "click", "target": "input[name='q']" },
+          { "action": "type", "target": "input[name='q']", "value": "zzzqqq" },
+          { "action": "waitFor", "target": "#search-results-status[role='status']", "durationMs": 15000 }
+        ],
+        "commands": [{ "kind": "pause", "durationMs": 4000 }],
+        "assertions": [{ "type": "contains", "evidenceType": "actionSpeech", "value": "No documents found" }]
+      }]
+    },
     "HVE-NVDA-011": {
       "targetRefs": ["docs.heading"],
       "executions": [{
@@ -233,7 +294,19 @@
         "assertions": [{ "type": "nodeMatches", "evidenceType": "accessibilityTree", "expected": { "role": "graphics-document" }, "minCount": 1 }]
       }]
     },
-    "HVE-NVDA-013": { "targetRefs": ["search.input", "search.shortcut"] },
+    "HVE-NVDA-013": {
+      "targetRefs": ["search.input", "search.shortcut"],
+      "executions": [{
+        "id": "hve-search-shortcut-context", "title": "Search field exposes its shortcut hint",
+        "route": "/hve-core/", "surfaceId": "homepage", "state": "empty",
+        "trigger": { "action": "focus", "target": "input.navbar__search-input" },
+        "commands": [{ "kind": "pause", "durationMs": 500 }],
+        "assertions": [
+          { "type": "nodeMatches", "evidenceType": "accessibilityTree", "expected": { "role": "textbox", "name": "Search" }, "minCount": 1, "maxCount": 1 },
+          { "type": "nodeMatches", "evidenceType": "accessibilityTree", "expected": { "nameContains": "Search" }, "minCount": 1 }
+        ]
+      }]
+    },
     "HVE-NVDA-014": {
       "targetRefs": ["search.pageInput", "search.regionHeading"],
       "executions": [{
@@ -395,7 +468,7 @@
         "trigger": { "action": "click", "target": "#fullscreen-button" },
         "commands": [{ "kind": "pause", "durationMs": 500 }],
         "assertions": [
-          { "type": "nodeMatches", "evidenceType": "accessibilityTree", "expected": { "role": "button", "nameContains": "screen" }, "minCount": 1 },
+          { "type": "nodeMatches", "evidenceType": "accessibilityTree", "expected": { "role": "button", "name": "Exit full screen", "pressed": true }, "minCount": 1, "maxCount": 1 },
           { "type": "nodeMatches", "evidenceType": "accessibilityTree", "expected": { "role": "group", "roledescription": "slide" }, "minCount": 1, "maxCount": 1 }
         ]
       }]

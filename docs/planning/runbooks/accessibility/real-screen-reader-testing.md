@@ -139,6 +139,8 @@ Removing the Guidepup cache does not reverse the machine-level changes `setup` m
 
 Use repeatable `--journey` arguments to select the exact live cases authorized for one desktop-control window. Unknown or duplicate IDs fail before browser or NVDA startup.
 
+Omitting `--journey` authorizes only the journeys authored under `calibration.journeys`. Case execution recipes bound through the screen-reader catalog take live desktop control, so they are opt-in and must be named explicitly. When a configuration authors no calibration journeys, an unfiltered command fails and lists the bound IDs available for explicit selection.
+
 ```powershell
 Set-Location $SkillRoot
 uv run scripts/runtime_a11y/__main__.py run-calibration `

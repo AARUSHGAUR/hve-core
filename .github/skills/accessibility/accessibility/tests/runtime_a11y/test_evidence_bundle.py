@@ -116,6 +116,12 @@ def inputs() -> dict:
                 "sourceRunId": "source-1",
                 "observedAt": "2026-09-16T11:55:00Z",
                 "sourceDigest": _DIGEST,
+                "boundTo": {
+                    "sourceRevision": _REVISION,
+                    "buildDigest": _DIGEST,
+                    "configDigest": _DIGEST,
+                    "fixtureDigest": _DIGEST,
+                },
                 "results": [
                     {
                         "resultId": "result-auto",
@@ -452,6 +458,54 @@ def test_given_release_scope_when_manual_result_missing_then_release_is_incomple
 
     # Assert
     assert bundle["scopeCompleteness"]["releaseEvidence"] == "incomplete"
+
+
+@pytest.mark.parametrize("status", ["FAIL", "CANT_TELL", "NOT_ASSESSED", "INAPPLICABLE"])
+def test_given_release_scope_when_deciding_result_is_adverse_then_incomplete(
+    inputs: dict,
+    status: str,
+) -> None:
+    # A schema-valid, self-consistent source must not promote a release when its
+    # own deciding result says the requirement did not pass.
+    inputs["scope"]["cadenceClass"] = "release"
+    inputs["scope"]["manualEvidencePolicy"] = "required"
+    inputs["sources"][0]["results"][0]["status"] = status
+    _refresh_source_digest(inputs)
+
+    bundle = compose_evidence(**inputs)
+
+    assert bundle["scopeCompleteness"]["releaseEvidence"] == "incomplete"
+    assert any(
+        "did not resolve to PASS" in reason
+        for reason in bundle["scopeCompleteness"]["reasons"]
+    )
+
+
+@pytest.mark.parametrize(
+    "field",
+    ["sourceRevision", "buildDigest", "configDigest", "fixtureDigest"],
+)
+def test_given_source_bound_to_other_context_when_composed_then_fails_closed(
+    inputs: dict,
+    field: str,
+) -> None:
+    # A self-consistent source from an earlier revision must not be combined
+    # with the current run context.
+    inputs["sources"][0]["boundTo"][field] = (
+        "c" * 40 if field == "sourceRevision" else "c" * 64
+    )
+    _refresh_source_digest(inputs)
+
+    with pytest.raises(ScriptError, match=f"bound to a different {field}"):
+        compose_evidence(**inputs)
+
+
+def test_given_unbound_source_when_composed_then_fails_closed(inputs: dict) -> None:
+    del inputs["sources"][0]["boundTo"]
+    _refresh_source_digest(inputs)
+
+    with pytest.raises(ScriptError, match="schema validation failed"):
+        compose_evidence(**inputs)
 
 
 def test_given_unproved_browser_state_when_composed_then_result_is_quarantined(
@@ -1188,6 +1242,15 @@ def test_given_conflicting_artifact_identity_when_collected_then_fails_closed() 
         {"API_KEY": "abc"},
         {"extensions": {"headers": {"x-trace": "1"}}},
         {"deep": {"nested": {"privateKey": "abc"}}},
+        {"sasToken": "sv=2021&sig=abcdefghijklmnopqrstuvwxyz0123456789"},
+        {"connectionString": "AccountName=x;AccountKey=abcdef1234567890"},
+        {"extensions": {"note": "sv=2021-08-06&sig=abcdefghijklmnopqrstuvwxyz012345"}},
+        {"extensions": {"note": "Authorization value Bearer abcdefghijklmnopqrstuvwxyz123456"}},
+        {"extensions": {"note": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVPmB92K27uhbUJU1p1r_wW1gFWFOEjXk"}},
+        {"extensions": {"note": "ghp_abcdefghijklmnopqrstuvwxyz0123456789"}},
+        {"extensions": {"note": "AKIAIOSFODNN7EXAMPLE"}},
+        {"extensions": {"note": "-----BEGIN RSA PRIVATE KEY-----"}},
+        {"extensions": {"deeper": [{"awsAccessKeyId": "abc"}]}},
     ],
 )
 def test_given_prohibited_content_when_validated_then_rejects(value: dict) -> None:
@@ -1203,6 +1266,10 @@ def test_given_prohibited_content_when_validated_then_rejects(value: dict) -> No
         {"monkey": "abc"},
         {"keyboardOnly": True},
         {"tokenizer": "default"},
+        {"observed": "The dialog exposes its accessible name and pressed state."},
+        {"observed": "Reading view keeps one slide in the accessibility tree."},
+        {"bundleDigest": "sha256:" + "a" * 64},
+        {"observed": "Certificate of conformance is not claimed by this bundle."},
     ],
 )
 def test_given_ordinary_keys_when_validated_then_allowed(value: dict) -> None:

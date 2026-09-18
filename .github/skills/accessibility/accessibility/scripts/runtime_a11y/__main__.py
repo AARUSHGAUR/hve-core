@@ -2190,9 +2190,9 @@ def _resolve_calibration_journey_ids(
 ) -> list[str]:
     """Resolve the one authorized journey list shared by notice, child, and evidence.
 
-    Authored calibration journeys come first, then bound catalog executions that
-    do not shadow an authored ID. An omitted filter authorizes this whole
-    resolved set explicitly; the Node executor never widens it.
+    An omitted filter authorizes only the operator's authored calibration
+    journeys. Bound catalog executions take live desktop control, so they are
+    opt-in by explicit id and are never added to an unfiltered selection.
     """
     calibration = config.get("calibration") or {}
     authored: list[str] = []
@@ -2235,14 +2235,21 @@ def _resolve_calibration_journey_ids(
         raise ScriptError("--journey values must be non-empty.", EXIT_USAGE)
 
     if not normalized:
-        if not resolved:
+        if authored:
+            return list(authored)
+        if bound:
             raise ScriptError(
-                "No calibration journeys are configured or bound. Author "
-                "calibration.journeys or bind a case execution recipe before "
-                "running calibration.",
+                "Live calibration needs an explicit --journey selection because no "
+                "calibration.journeys are authored. Bound case executions are "
+                "opt-in: " + ", ".join(bound),
                 EXIT_USAGE,
             )
-        return resolved
+        raise ScriptError(
+            "No calibration journeys are configured or bound. Author "
+            "calibration.journeys or bind a case execution recipe before "
+            "running calibration.",
+            EXIT_USAGE,
+        )
 
     if len(normalized) != len(set(normalized)):
         raise ScriptError("--journey values must be unique.", EXIT_USAGE)
@@ -2253,6 +2260,49 @@ def _resolve_calibration_journey_ids(
             EXIT_USAGE,
         )
     return normalized
+
+
+def _assert_executed_journey_identity(
+    payload: dict[str, Any], journey_ids: list[str]
+) -> list[str]:
+    """Reject child output whose journey identity is absent or differs from the authorization."""
+    authorized = ", ".join(journey_ids)
+    executed = payload.get("journeys")
+    if not isinstance(executed, list) or not executed:
+        raise ScriptError(
+            "Calibration returned no executed journey identity. "
+            f"Authorized: {authorized}."
+        )
+    if any(not isinstance(item, str) or not item.strip() for item in executed):
+        raise ScriptError(
+            "Calibration returned an empty or non-string journey identity. "
+            f"Authorized: {authorized}."
+        )
+
+    executed_ids = [item.strip() for item in executed]
+    duplicates = sorted({item for item in executed_ids if executed_ids.count(item) > 1})
+    if duplicates:
+        raise ScriptError(
+            "Calibration returned duplicate executed journey identities: "
+            + ", ".join(duplicates)
+            + f". Authorized: {authorized}."
+        )
+    if executed_ids != journey_ids:
+        missing = [item for item in journey_ids if item not in executed_ids]
+        unexpected = [item for item in executed_ids if item not in journey_ids]
+        detail = ""
+        if missing:
+            detail += " Missing: " + ", ".join(missing) + "."
+        if unexpected:
+            detail += " Unexpected: " + ", ".join(unexpected) + "."
+        if not detail:
+            detail = " The executed order does not match the authorized order."
+        raise ScriptError(
+            "Calibration executed journeys that differ from the authorized set. "
+            f"Authorized: {authorized}. "
+            f"Executed: {', '.join(executed_ids)}.{detail}"
+        )
+    return executed_ids
 
 
 def _cmd_run_calibration(args: argparse.Namespace) -> int:
@@ -2331,15 +2381,7 @@ def _cmd_run_calibration(args: argparse.Namespace) -> int:
             _stop_visual_review_server(server_process)
         _emit_live_test_finish_notice()
 
-    executed_journey_ids = [
-        str(item) for item in payload.get("journeys", journey_ids) or []
-    ]
-    if executed_journey_ids and executed_journey_ids != journey_ids:
-        raise ScriptError(
-            "Calibration executed journeys that differ from the authorized set. "
-            f"Authorized: {', '.join(journey_ids)}. "
-            f"Executed: {', '.join(executed_journey_ids)}."
-        )
+    _assert_executed_journey_identity(payload, journey_ids)
 
     document = {
         "tool": "runtime_a11y",

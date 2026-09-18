@@ -63,7 +63,7 @@ test('fullscreen state and forced-colors behavior are part of the starter contra
   assert.match(html, /id="fullscreen-button" aria-pressed="false"/);
   assert.match(source, /addEventListener\('fullscreenchange'/);
   assert.match(source, /setAttribute\('aria-pressed', String\(active\)\)/);
-  assert.match(source, /if \(!active\) fullscreenButton\.focus\(\)/);
+  assert.match(source, /fullscreenInitiator \|\| fullscreenButton/);
   assert.match(theme, /@media \(forced-colors: active\)/);
   assert.match(theme, /ButtonFace/);
   assert.match(theme, /Highlight/);

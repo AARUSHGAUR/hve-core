@@ -336,7 +336,11 @@ export function classifyAtCaseResult(result = {}, runRoot = null) {
   const hasPersistedArtifacts = hasMatchingArtifactHashes(result?.artifactHashes, runRoot);
   const capabilitySupported = result?.capability?.supported !== false;
   const isRealDriver = isRealAtDriver(result, evidence);
-  const isStrictPass = status === 'pass' && isRealDriver && capabilitySupported && !synthetic && !Boolean(evidence?.synthetic) && hasAdequateEvidence && hasPersistedArtifacts && !requiredAssertionFailure && !assertionFailure && !invalidAssertion;
+  // A started screen reader that cannot be proven stopped leaves the desktop under
+  // automation control, so its evidence cannot authorize a pass.
+  const cleanup = result?.cleanup || evidence?.cleanup || {};
+  const cleanupProven = cleanup?.driverStarted !== true || cleanup?.driverStopped === true;
+  const isStrictPass = status === 'pass' && isRealDriver && capabilitySupported && !synthetic && !Boolean(evidence?.synthetic) && hasAdequateEvidence && hasPersistedArtifacts && cleanupProven && !requiredAssertionFailure && !assertionFailure && !invalidAssertion;
 
   if (['candidate', 'unsupported', 'unavailable'].includes(status) || ['candidate', 'unsupported', 'unavailable'].includes(explicitClassification)) {
     return 'unavailable';
@@ -1214,9 +1218,22 @@ export async function runRealCalibrationSession({
     }
   }
 
+  const teardownProven = browserTeardown.pageCloseStatus !== 'failed'
+    && browserTeardown.browserCloseStatus !== 'failed'
+    && browserTeardown.browserConnectedAfterClose !== true;
+
+  let aggregateReason = 'Calibration completed for the requested journeys.';
+  if (visualPreflightStatus === 'fail') {
+    aggregateReason = 'Visual preflight did not complete successfully.';
+  } else if (checkpoints.length !== journeys.length) {
+    aggregateReason = 'Calibration did not complete successfully because some journeys lacked accepted evidence.';
+  } else if (!teardownProven) {
+    aggregateReason = 'Calibration could not prove browser teardown, so the run is not accepted.';
+  }
+
   const aggregate = {
-    status: visualPreflightStatus === 'fail' || checkpoints.length !== journeys.length ? 'unsuccessful' : 'successful',
-    reason: visualPreflightStatus === 'fail' ? 'Visual preflight did not complete successfully.' : (checkpoints.length === journeys.length ? 'Calibration completed for the requested journeys.' : 'Calibration did not complete successfully because some journeys lacked accepted evidence.'),
+    status: visualPreflightStatus === 'fail' || checkpoints.length !== journeys.length || !teardownProven ? 'unsuccessful' : 'successful',
+    reason: aggregateReason,
     completedCount: checkpoints.length,
   };
 

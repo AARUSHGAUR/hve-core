@@ -20,6 +20,7 @@ from runtime_a11y._errors import (
     EXIT_REVIEWER_INCOMPLETE,
     EXIT_SUCCESS,
     EXIT_USAGE,
+    ScriptError,
 )
 
 
@@ -680,6 +681,7 @@ def test_given_calibration_run_when_run_root_override_is_provided_then_subproces
                 {
                     "tool": "runtime_a11y",
                     "command": "run-calibration",
+                    "journeys": ["14399"],
                     "aggregate": {"status": "successful"},
                 }
             ),
@@ -739,6 +741,7 @@ def test_calibration_run_passes_base_url_override(
                 {
                     "tool": "runtime_a11y",
                     "command": "run-calibration",
+                    "journeys": ["14399"],
                     "aggregate": {"status": "successful"},
                 }
             ),
@@ -798,6 +801,10 @@ def test_given_journey_filters_when_calibration_runs_then_selection_is_forwarded
                 {
                     "tool": "runtime_a11y",
                     "command": "run-calibration",
+                    "journeys": [
+                        "search-status-announcement",
+                        "presentation-current-slide",
+                    ],
                     "aggregate": {"status": "successful"},
                 }
             ),
@@ -857,6 +864,7 @@ def test_given_unfiltered_calibration_when_running_then_forwards_resolved_ids(
                 {
                     "tool": "runtime_a11y",
                     "command": "run-calibration",
+                    "journeys": ["alpha", "beta"],
                     "aggregate": {"status": "successful"},
                 }
             ),
@@ -968,6 +976,77 @@ def test_given_child_executes_other_journeys_then_calibration_fails(
     assert not (run_root / "calibration-output.json").exists()
 
 
+def _authorization_config(
+    authored: list[dict[str, str]],
+    bound: list[str],
+) -> dict[str, object]:
+    return {
+        "calibration": {"journeys": authored},
+        "resolvedCaseCatalog": {"cases": [{"caseId": "CASE-001"}]},
+        "resolvedBindingProfile": {
+            "caseBindings": {
+                "CASE-001": {"executions": [{"id": item} for item in bound]}
+            }
+        },
+    }
+
+
+def test_given_omitted_filter_when_bound_recipes_exist_then_only_authored_are_authorized() -> None:
+    # Bound recipes take live desktop control, so an unfiltered run must not reach them.
+    config = _authorization_config([{"id": "authored-one"}], ["bound-one", "bound-two"])
+
+    assert cli._resolve_calibration_journey_ids(config, []) == ["authored-one"]
+
+
+def test_given_omitted_filter_and_no_authored_journeys_then_bound_ids_must_be_requested() -> None:
+    config = _authorization_config([], ["bound-one", "bound-two"])
+
+    with pytest.raises(ScriptError) as error:
+        cli._resolve_calibration_journey_ids(config, [])
+
+    assert "opt-in" in str(error.value)
+    assert "bound-one" in str(error.value)
+    assert "bound-two" in str(error.value)
+
+
+def test_given_explicit_request_when_bound_recipe_named_then_it_is_authorized() -> None:
+    config = _authorization_config([{"id": "authored-one"}], ["bound-one"])
+
+    assert cli._resolve_calibration_journey_ids(config, ["bound-one"]) == ["bound-one"]
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected"),
+    [
+        ({}, "no executed journey identity"),
+        ({"journeys": []}, "no executed journey identity"),
+        ({"journeys": ["alpha", ""]}, "empty or non-string"),
+        ({"journeys": ["alpha", 7]}, "empty or non-string"),
+        ({"journeys": ["alpha", "alpha", "beta"]}, "duplicate"),
+        ({"journeys": ["alpha"]}, "Missing: beta"),
+        ({"journeys": ["alpha", "beta", "gamma"]}, "Unexpected: gamma"),
+        ({"journeys": ["beta", "alpha"]}, "does not match the authorized order"),
+    ],
+)
+def test_given_invalid_child_identity_then_calibration_identity_check_fails(
+    payload: dict[str, object],
+    expected: str,
+) -> None:
+    with pytest.raises(ScriptError) as error:
+        cli._assert_executed_journey_identity(payload, ["alpha", "beta"])
+
+    assert expected in str(error.value)
+
+
+def test_given_matching_child_identity_then_calibration_identity_check_passes() -> None:
+    payload = {"journeys": ["alpha", "beta"]}
+
+    assert cli._assert_executed_journey_identity(payload, ["alpha", "beta"]) == [
+        "alpha",
+        "beta",
+    ]
+
+
 def test_given_calibration_run_when_prerequisite_only_then_reports_readiness(
     mocker,
     tmp_path: Path,
@@ -1073,7 +1152,10 @@ def test_given_no_out_flag_when_running_calibration_then_writes_into_run_root(
     mocker.patch.object(
         cli,
         "_run_calibration_session",
-        return_value={"aggregate": {"status": "successful"}},
+        return_value={
+            "journeys": ["search-results"],
+            "aggregate": {"status": "successful"},
+        },
     )
     mocker.patch.object(cli, "_emit_live_test_start_notice")
     mocker.patch.object(cli, "_emit_live_test_finish_notice")
@@ -1114,7 +1196,10 @@ def test_run_calibration_emits_start_and_finish_notices_for_live_execution(
     mocker.patch.object(
         cli,
         "_run_calibration_session",
-        return_value={"aggregate": {"status": "successful"}},
+        return_value={
+            "journeys": ["14399"],
+            "aggregate": {"status": "successful"},
+        },
     )
     mocker.patch.object(cli, "_ensure_visual_review_server", return_value=(None, False))
     mocker.patch.object(cli, "_stop_visual_review_server")
@@ -1539,6 +1624,7 @@ def test_repo_relative_paths_dispatch_as_absolute(
                 {
                     "tool": "runtime_a11y",
                     "command": "run-calibration",
+                    "journeys": ["14399"],
                     "aggregate": {"status": "successful"},
                 }
             ),

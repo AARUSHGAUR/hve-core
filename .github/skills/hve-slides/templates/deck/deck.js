@@ -262,12 +262,21 @@
       }
     }
     const fullscreenButton = required('#fullscreen-button');
-    fullscreenButton.addEventListener('click', fullscreen);
+    let fullscreenInitiator = null;
+    fullscreenButton.addEventListener('click', () => {
+      fullscreenInitiator = fullscreenButton;
+      void fullscreen();
+    });
     document.addEventListener('fullscreenchange', () => {
       const active = Boolean(document.fullscreenElement);
       fullscreenButton.setAttribute('aria-pressed', String(active));
       fullscreenButton.textContent = active ? 'Exit full screen' : 'Full screen';
-      if (!active) fullscreenButton.focus();
+      if (active) return;
+      // Returning focus to the toolbar would strand a user who entered full screen
+      // from the presentation surface and relies on its scoped shortcuts.
+      const restoreTarget = fullscreenInitiator || fullscreenButton;
+      fullscreenInitiator = null;
+      if (document.activeElement === document.body || document.activeElement === null) restoreTarget.focus();
     });
     document.addEventListener('keydown', event => {
       if (!ready || dialog.open || event.altKey || event.ctrlKey || event.metaKey) return;
@@ -283,7 +292,10 @@
       else if (['arrowleft', 'pageup'].includes(key)) deck.prev();
       else if (key === 'home') deck.slide(0);
       else if (key === 'end') deck.slide(sections.length - 1);
-      else if (key === 'f') void fullscreen();
+      else if (key === 'f') {
+        fullscreenInitiator = required('main.slides');
+        void fullscreen();
+      }
       else if (['o', 's', 'n', '?'].includes(key)) showDialog({ o: 'overview', s: 'sources', n: 'notes', '?': 'help' }[key]);
       else performStep(demo, { '[': 'back', ']': 'next', r: 'reset' }[key]);
     });

@@ -242,7 +242,7 @@ def test_run_calibration_keeps_server_reuse_without_stopping_it(
     mocker.patch.object(
         cli,
         "_run_calibration_session",
-        return_value={"aggregate": {"status": "successful"}, "journeys": []},
+        return_value={"aggregate": {"status": "successful"}, "journeys": ["14399"]},
     )
     mocker.patch.object(
         cli,

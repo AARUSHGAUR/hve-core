@@ -48,18 +48,22 @@ test('materialized cases expose routes and targets but fail closed without recip
   assert.equal(presentation.targets[0].route, '/hve-core/slides/{slug}.html');
   assert.ok(presentation.targets.some((target) => target.targetRef === 'presentation.currentSlide'));
   assert.equal(presentation.automationExclusionReason, null);
-  const unbound = cases.find((entry) => entry.caseId === 'HVE-NVDA-003');
+  // Every committed case is bound, so the exclusion path uses a fixture.
+  const stripped = copy(binding);
+  stripped.caseBindings['HVE-NVDA-003'] = { targetRefs: ['search.seeAll'] };
+  const unbound = materializeBoundCases(catalog, stripped).find((entry) => entry.caseId === 'HVE-NVDA-003');
   assert.equal(unbound.automationEligible, false);
   assert.match(unbound.automationExclusionReason, /execution recipe/);
 });
 
 test('materialized execution journeys preserve case identity and explicit recipes', () => {
   const journeys = materializeExecutionJourneys(catalog, binding);
-  assert.equal(journeys.length, 27);
+  assert.equal(journeys.length, 32);
   assert.deepEqual(journeys.map((entry) => entry.caseId), [
     'SR-INTEGRITY-001',
-    'HVE-NVDA-001', 'HVE-NVDA-002', 'HVE-NVDA-002', 'HVE-NVDA-004', 'HVE-NVDA-005', 'HVE-NVDA-006',
-    'HVE-NVDA-007', 'HVE-NVDA-008', 'HVE-NVDA-009', 'HVE-NVDA-011', 'HVE-NVDA-012',
+    'HVE-NVDA-001', 'HVE-NVDA-002', 'HVE-NVDA-002', 'HVE-NVDA-003', 'HVE-NVDA-004', 'HVE-NVDA-005', 'HVE-NVDA-006',
+    'HVE-NVDA-007', 'HVE-NVDA-007', 'HVE-NVDA-008', 'HVE-NVDA-009', 'HVE-NVDA-010', 'HVE-NVDA-010',
+    'HVE-NVDA-011', 'HVE-NVDA-012', 'HVE-NVDA-013',
     'HVE-NVDA-014', 'HVE-NVDA-015', 'HVE-NVDA-016', 'HVE-NVDA-016',
     'PRES-NVDA-001', 'PRES-NVDA-001', 'PRES-NVDA-002', 'PRES-NVDA-002', 'PRES-NVDA-002',
     'PRES-NVDA-003', 'PRES-NVDA-003', 'PRES-NVDA-003', 'PRES-NVDA-004', 'PRES-NVDA-005', 'PRES-NVDA-005',
@@ -83,7 +87,28 @@ test('named HVE and presentation recipes satisfy their declared capabilities', (
   ]) {
     assert.ok(covered.has(key), `expected ${key} to be covered`);
   }
-  assert.ok(uncovered.every((item) => item.reason === 'No execution recipe covers this state.'));
+  assert.ok(uncovered.every((item) => item.reason === 'No execution recipe covers this state.'
+    || item.reason === 'No execution recipe decides this case with representative screen-reader evidence.'));
+});
+
+test('a case declaring real NVDA reports a representative gap when only browser evidence decides it', () => {
+  const result = methodCellFixture(
+    { requiredCapabilities: ['real-nvda', 'structured-node-assertions'] },
+    { assertions: [{ type: 'nodeMatches', evidenceType: 'accessibilityTree', expected: { role: 'main' } }] },
+  );
+
+  // The tree assertion still decides its own capability, but it is browser
+  // evidence and cannot satisfy the declared screen-reader obligation.
+  assert.equal(result.cells.length, 1);
+  assert.equal(result.cells[0].method, 'playwright');
+  assert.equal(result.cells[0].probe, 'probe-browser-state');
+  assert.deepEqual(result.uncovered, [{
+    caseId: 'FIX-001',
+    state: 'initial',
+    capability: 'real-nvda',
+    method: 'real-at',
+    reason: 'No execution recipe decides this case with representative screen-reader evidence.',
+  }]);
 });
 
 function methodCellFixture(caseOverrides, executionOverrides) {
@@ -130,10 +155,31 @@ function methodCellFixture(caseOverrides, executionOverrides) {
   return materializeMethodCells(fixtureCatalog, fixtureBinding);
 }
 
+test('a fullscreen state is decided only by an assertion that tests its pressed state', () => {
+  const caseOverrides = { requiredCapabilities: ['presentation'], states: ['fullscreen'] };
+  const weak = methodCellFixture(caseOverrides, {
+    state: 'fullscreen',
+    assertions: [{ type: 'nodeMatches', evidenceType: 'accessibilityTree', expected: { role: 'button', nameContains: 'screen' } }],
+  });
+  const decisive = methodCellFixture(caseOverrides, {
+    state: 'fullscreen',
+    assertions: [{ type: 'nodeMatches', evidenceType: 'accessibilityTree', expected: { role: 'button', name: 'Exit full screen', pressed: true } }],
+  });
+
+  assert.equal(weak.cells.length, 0);
+  assert.match(weak.uncovered[0].reason, /must expose its pressed state/);
+  assert.equal(decisive.cells.length, 1);
+  assert.equal(decisive.uncovered.length, 0);
+});
+
 test('method cells separate deterministic browser and representative-AT methods', () => {
   const realAt = methodCellFixture(
-    { requiredCapabilities: ['real-nvda', 'structured-node-assertions'] },
-    { assertions: [{ type: 'nodeMatches', evidenceType: 'accessibilityTree', expected: { role: 'main' } }] },
+    { requiredCapabilities: ['real-nvda', 'action-scoped-speech'] },
+    {
+      captureMode: 'action',
+      triggerAfterDriverStart: true,
+      assertions: [{ type: 'contains', evidenceType: 'actionSpeech', value: 'results' }],
+    },
   );
   const browser = methodCellFixture(
     { requiredCapabilities: ['structured-node-assertions'] },
@@ -145,12 +191,13 @@ test('method cells separate deterministic browser and representative-AT methods'
     caseId: 'FIX-001',
     executionId: 'fixture-execution',
     state: 'initial',
-    capability: 'structured-node-assertions',
+    capability: 'action-scoped-speech',
     method: 'real-at',
     probe: 'probe-screen-reader',
-    resultSource: 'accessibility-tree',
-    stateProof: 'not-required',
+    resultSource: 'action-speech',
+    stateProof: 'required',
   });
+  assert.equal(realAt.uncovered.length, 0);
   assert.equal(browser.cells[0].method, 'playwright');
   assert.equal(browser.cells[0].probe, 'probe-browser-state');
 });
@@ -164,7 +211,7 @@ test('method cells reject a capability with no evidence rule', () => {
 
 test('method cells report an uncovered state rather than promoting it', () => {
   const result = methodCellFixture(
-    { requiredCapabilities: ['real-nvda', 'structured-node-assertions'], states: ['initial', 'missing'] },
+    { requiredCapabilities: ['structured-node-assertions'], states: ['initial', 'missing'] },
     { assertions: [{ type: 'nodeMatches', evidenceType: 'accessibilityTree', expected: { role: 'main' } }] },
   );
 
@@ -173,7 +220,7 @@ test('method cells report an uncovered state rather than promoting it', () => {
     caseId: 'FIX-001',
     state: 'missing',
     capability: 'structured-node-assertions',
-    method: 'real-at',
+    method: 'playwright',
     reason: 'No execution recipe covers this state.',
   }]);
 });
@@ -241,7 +288,7 @@ const CAPABILITY_CASES = [
 
 for (const entry of CAPABILITY_CASES) {
   test(`method cells enforce the ${entry.capability} evidence rule`, () => {
-    const caseOverrides = { requiredCapabilities: ['real-nvda', entry.capability] };
+    const caseOverrides = { requiredCapabilities: [entry.capability] };
     const invalid = methodCellFixture(caseOverrides, entry.invalid);
     assert.equal(invalid.cells.length, 0);
     assert.equal(invalid.uncovered.length, 1);
@@ -252,6 +299,16 @@ for (const entry of CAPABILITY_CASES) {
     assert.equal(valid.cells[0].capability, entry.capability);
   });
 }
+
+test('every site case is covered and remaining gaps belong to the presentation surface', () => {
+  const { cells, uncovered } = materializeMethodCells(catalog, binding);
+
+  assert.equal(uncovered.filter((item) => item.caseId.startsWith('HVE-NVDA-')).length, 0);
+  assert.ok(uncovered.every((item) => item.caseId.startsWith('PRES-NVDA-')));
+  // Representative evidence is speech-decided, so it stays a minority of cells.
+  assert.ok(cells.some((cell) => cell.method === 'real-at'));
+  assert.ok(cells.some((cell) => cell.method === 'playwright'));
+});
 
 test('HVE method cells report honest coverage instead of existence-only eligibility', () => {
   const result = materializeMethodCells(catalog, binding);

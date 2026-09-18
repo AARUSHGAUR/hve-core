@@ -560,7 +560,11 @@ test('runRealCalibrationSession records browser teardown failures without throwi
     assert.equal(session.browserTeardown.browserCloseStatus, 'failed');
     assert.equal(session.browserTeardown.browserCloseError, 'browser close failed');
     assert.equal(session.browserTeardown.browserConnectedAfterClose, false);
-    assert.equal(session.aggregate.status, 'successful');
+    // The journey itself produced accepted evidence, but an unproven teardown
+    // still withholds aggregate success.
+    assert.equal(session.checkpoints.length, 1);
+    assert.equal(session.aggregate.status, 'unsuccessful');
+    assert.match(session.aggregate.reason, /teardown/);
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
   }
@@ -1110,6 +1114,126 @@ test('classifyAtCaseResult maps unsupported, assertion, product, infrastructure,
     const { classifyAtCaseResult } = await import('../../../scripts/runtime_a11y/runner/calibration-executor.mjs');
     assert.equal(classifyAtCaseResult(testCase.input), testCase.expected, testCase.name);
   }
+});
+
+test('classifyAtCaseResult refuses to pass a result whose screen-reader stop is unproven', async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), 'calibration-cleanup-'));
+  try {
+    const journey = {
+      journeyId: 'cleanup-gate',
+      route: '/',
+      surfaceId: 'presentation',
+      state: 'initial',
+      trigger: { action: 'focus', target: 'main' },
+      commands: [{ kind: 'pause', durationMs: 0 }],
+      assertions: [{ id: 'tree', type: 'nodeMatches', evidenceType: 'accessibilityTree', expected: { role: 'main' } }],
+    };
+    const passingPayload = (cleanup) => ({
+      status: 'pass',
+      driver: 'nvda',
+      at: 'nvda',
+      capability: { supported: true, synthetic: false, at: 'nvda' },
+      assertions: [{ id: 'tree', status: 'pass' }],
+      cleanup,
+      evidence: {
+        synthetic: false,
+        rawPhrases: [],
+        normalizedPhrases: [],
+        accessibilityTree: { nodes: [{ role: { value: 'main' } }] },
+        cleanup,
+        provenance: {
+          driver: 'nvda',
+          at: 'nvda',
+          realAtPassAllowed: true,
+          guidepupLibraryVersion: '0.34.0',
+          nvdaAssetVersion: '0.2.1-2026.2',
+        },
+      },
+    });
+
+    const stopped = await defaultRunAtCase({
+      journey,
+      config: { baseUrl: 'http://127.0.0.1:3000' },
+      runRoot: tempDir,
+      processAtPlanCaseImpl: async () => passingPayload({ driverStarted: true, driverStopped: true }),
+    });
+    assert.equal(stopped.classification, 'pass');
+
+    const unproven = await defaultRunAtCase({
+      journey,
+      config: { baseUrl: 'http://127.0.0.1:3000' },
+      runRoot: tempDir,
+      processAtPlanCaseImpl: async () => passingPayload({ driverStarted: true, driverStopped: false }),
+    });
+    assert.equal(unproven.classification, 'infrastructureFailure');
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('runRealCalibrationSession withholds checkpoints and success when cleanup or teardown is unproven', async () => {
+  const config = {
+    baseUrl: 'http://127.0.0.1:3000',
+    calibration: {
+      journeys: [{
+        id: 'cleanup-session',
+        route: '/',
+        surfaceId: 'presentation',
+        state: 'initial',
+        trigger: { action: 'focus', target: 'main' },
+        commands: [{ kind: 'pause', durationMs: 0 }],
+        assertions: [{ id: 'speech', type: 'contains', value: 'search' }],
+      }],
+    },
+  };
+
+  const unprovenStop = await runRealCalibrationSession({
+    config,
+    probePrerequisites: async () => ({ nvdaAvailable: true, desktopUnlocked: true }),
+    runVisualPreflight: async () => ({ status: 'pass', summary: { classification: 'pass' } }),
+    launchBrowser: async () => ({
+      newPage: async () => ({ goto: async () => {}, close: async () => {}, context: () => ({}) }),
+      close: async () => {},
+      isConnected: () => false,
+    }),
+    runAtCase: async () => ({
+      classification: 'pass',
+      driver: 'nvda',
+      at: 'nvda',
+      capability: { supported: true, synthetic: false, at: 'nvda' },
+      cleanup: { driverStarted: true, driverStopped: false },
+      provenance: { driver: 'nvda', at: 'nvda' },
+      evidence: { synthetic: false, cleanup: { driverStarted: true, driverStopped: false } },
+      outcome: { status: 'pass' },
+    }),
+  });
+
+  assert.equal(unprovenStop.checkpoints.length, 0);
+  assert.equal(unprovenStop.aggregate.status, 'unsuccessful');
+
+  const brokenTeardown = await runRealCalibrationSession({
+    config,
+    probePrerequisites: async () => ({ nvdaAvailable: true, desktopUnlocked: true }),
+    runVisualPreflight: async () => ({ status: 'pass', summary: { classification: 'pass' } }),
+    launchBrowser: async () => ({
+      newPage: async () => ({ goto: async () => {}, close: async () => {}, context: () => ({}) }),
+      close: async () => { throw new Error('browser close failed'); },
+      isConnected: () => true,
+    }),
+    runAtCase: async () => ({
+      classification: 'unavailable',
+      driver: 'nvda',
+      at: 'nvda',
+      capability: { supported: true, synthetic: false, at: 'nvda' },
+      cleanup: { driverStarted: true, driverStopped: true },
+      provenance: { driver: 'nvda', at: 'nvda' },
+      evidence: { synthetic: false },
+      outcome: { status: 'unavailable' },
+    }),
+  });
+
+  assert.equal(brokenTeardown.browserTeardown.browserCloseStatus, 'failed');
+  assert.equal(brokenTeardown.aggregate.status, 'unsuccessful');
 });
 
 test('detectGuidepupNvda keeps registry evidence diagnostic when the package and selected asset are absent', async () => {
