@@ -69,6 +69,22 @@
     let ready = false;
     const announce = text => { required('#announcement').textContent = text; };
 
+    // Replacing the demo body moves focus, and a screen reader speaks that focus
+    // change immediately. A polite region updated in the same task is superseded
+    // before it is spoken, so the step announcement waits for focus to settle.
+    const ANNOUNCE_SETTLE_MS = 150;
+    let pendingAnnouncement = null;
+
+    function announceStepAfterFocusSettles(name, index, text) {
+      if (pendingAnnouncement) clearTimeout(pendingAnnouncement);
+      pendingAnnouncement = setTimeout(() => {
+        pendingAnnouncement = null;
+        // A faster action may have moved the walkthrough on before this fires.
+        if (states.get(name) !== index) return;
+        announce(text);
+      }, ANNOUNCE_SETTLE_MS);
+    }
+
     function renderDemo(host, speak = false) {
       const demo = demos[host.dataset.demo];
       const index = states.get(host.dataset.demo);
@@ -90,7 +106,13 @@
       if ((focused === back && back.disabled) || (focused === forward && forward.disabled)) {
         (back.disabled ? forward.disabled ? host.querySelector('[data-action="reset"]') : forward : back).focus();
       }
-      if (speak) announce(`${demo.label}. Step ${index + 1} of ${demo.steps.length}. ${step.phase}. ${step.state}.`);
+      if (speak) {
+        announceStepAfterFocusSettles(
+          host.dataset.demo,
+          index,
+          `${demo.label}. Step ${index + 1} of ${demo.steps.length}. ${step.phase}. ${step.state}.`,
+        );
+      }
     }
     function performStep(host, action) {
       const name = host.dataset.demo;

@@ -38,6 +38,15 @@ test('every walkthrough can advance, reverse, clamp and reset without affecting 
   assert.equal(moveStep(3, 'next', demos.builder.steps.length), 4);
 });
 
+test('walkthrough step announcements coalesce after focus settles', () => {
+  const source = fs.readFileSync(path.join(__dirname, 'deck.js'), 'utf8');
+  // A step announcement written in the same task as the focus move is superseded
+  // before it is spoken, and a superseded step must not announce at all.
+  assert.match(source, /if \(pendingAnnouncement\) clearTimeout\(pendingAnnouncement\)/);
+  assert.match(source, /if \(states\.get\(name\) !== index\) return/);
+  assert.doesNotMatch(source, /if \(speak\) announce\(/);
+});
+
 test('fullscreen state and forced-colors behavior remain explicit', () => {
   const source = fs.readFileSync(path.join(__dirname, 'deck.js'), 'utf8');
   const theme = fs.readFileSync(path.join(__dirname, 'theme.css'), 'utf8');
