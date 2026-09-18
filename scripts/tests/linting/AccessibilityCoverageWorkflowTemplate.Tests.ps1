@@ -87,17 +87,22 @@ Describe 'Accessibility coverage workflow template' -Tag 'Unit' {
     }
 
     It 'Keeps every embedded Python program syntactically valid' {
-        $harness = Join-Path $script:repoRoot '.github/skills/accessibility/accessibility'
         $blocks = [regex]::Matches(
             ($script:steps | Where-Object { $_.ContainsKey('run') } | ForEach-Object { $_['run'] }) -join "`n",
             "(?s)<<'PY'\r?\n(.*?)\r?\n\s*PY")
         @($blocks).Count | Should -BeGreaterThan 0
 
+        # py_compile is stdlib, so any interpreter works and no project environment is needed.
+        $python = @('python3', 'python') |
+            ForEach-Object { Get-Command $_ -CommandType Application -ErrorAction SilentlyContinue } |
+            Select-Object -First 1
+        $python | Should -Not -BeNullOrEmpty -Because 'compiling the embedded programs requires a Python interpreter'
+
         foreach ($block in $blocks) {
             $source = Join-Path ([System.IO.Path]::GetTempPath()) ((New-Guid).Guid + '.py')
             try {
                 Set-Content -LiteralPath $source -Value $block.Groups[1].Value -Encoding utf8
-                $output = & uv run --project $harness python -c "import py_compile,sys; py_compile.compile(sys.argv[1], doraise=True)" $source 2>&1
+                $output = & $python.Source -c "import py_compile,sys; py_compile.compile(sys.argv[1], doraise=True)" $source 2>&1
                 $LASTEXITCODE | Should -Be 0 -Because "embedded Python must compile: $output"
             }
             finally {
