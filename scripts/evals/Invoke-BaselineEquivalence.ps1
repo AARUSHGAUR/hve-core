@@ -702,11 +702,11 @@ function Resolve-LatestRunDir {
 function Test-CustomizedInvocationRetryEligibility {
     <#
     .SYNOPSIS
-        Determines whether one complete customized GPT calibration retry is allowed.
+        Determines whether one complete customized calibration retry is allowed.
     .DESCRIPTION
-        The retry is limited to the first customized GPT calibration attempt when the
-        validated baseline is structurally complete and the customized defect is either
-        one failed exact read or a structurally reconciled batch of typed executor errors.
+        The retry is limited to the first customized calibration attempt for the fixed
+        model pair when the validated baseline is structurally complete and the customized
+        defect is either one failed exact read or a reconciled batch of typed executor errors.
         Every other invocation defect remains immediately authoritative.
     .OUTPUTS
         [bool] True only for the single approved retry condition.
@@ -736,7 +736,7 @@ function Test-CustomizedInvocationRetryEligibility {
         [hashtable]$ExecutionDiagnostic
     )
 
-    if ($Tier -ne 'calibration' -or $Model -ne 'gpt-5.6-luna' -or $Attempt -ne 1) { return $false }
+    if ($Tier -ne 'calibration' -or $Model -notin @('gpt-5.6-luna', 'claude-sonnet-5') -or $Attempt -ne 1) { return $false }
     if (-not $BaselineHasSignal -or $BaselineStructural -ne 0) { return $false }
     if ($InvocationTally.Expected -le 0) { return $false }
 
@@ -1161,7 +1161,7 @@ if ($MyInvocation.InvocationName -ne '.') {
                     -BaselineStructural $baselineStructural `
                     -InvocationTally $invocationTally `
                     -ExecutionDiagnostic $customizedDiagnostic) {
-                Write-Host '   Agent invocation: retrying one complete customized GPT calibration run after eligible incomplete evidence' -ForegroundColor Yellow
+                Write-Host "   Agent invocation: retrying one complete customized $model calibration run after eligible incomplete evidence" -ForegroundColor Yellow
                 $customizedAttempt++
                 $firstCustomizedRunDir = $bRunDir
                 $codeB = Invoke-VallyCommand -Arguments $evalCustomized

@@ -505,6 +505,18 @@ Describe 'Test-CustomizedInvocationRetryEligibility' -Tag 'Unit' {
         Test-CustomizedInvocationRetryEligibility @script:RetryArgs | Should -BeTrue
     }
 
+    It 'Allows the same bounded retry for the fixed Claude calibration model' {
+        $script:RetryArgs.Model = 'claude-sonnet-5'
+
+        Test-CustomizedInvocationRetryEligibility @script:RetryArgs | Should -BeTrue
+    }
+
+    It 'Rejects a model outside the fixed calibration pair' {
+        $script:RetryArgs.Model = 'future-model'
+
+        Test-CustomizedInvocationRetryEligibility @script:RetryArgs | Should -BeFalse
+    }
+
     It 'Rejects the deterministic <Category> executor category' -ForEach @(
         @{ Category = 'authentication-or-authorization' }
         @{ Category = 'model-unavailable' }
