@@ -1448,7 +1448,7 @@ stimuli:
       be required before updating a human-authored widget?
     tags:
       category: behavior-conformance
-      instruction: mural-human-record-writeback
+      instruction: mural-human-record
       advisory: "true"
     graders:
       - type: output-matches
