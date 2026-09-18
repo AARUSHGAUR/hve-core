@@ -56,6 +56,10 @@
     {
       "name": "general-technical",
       "path": "./.cspell/general-technical.txt"
+    },
+    {
+      "name": "test-fixtures",
+      "path": "./.cspell/test-fixtures.txt"
     }
   ],
   "dictionaries": [
@@ -69,7 +73,8 @@
     "azure-services",
     "microsoft-sample-companies",
     "industry-acronyms",
-    "general-technical"
+    "general-technical",
+    "test-fixtures"
   ],
   "words": [
     "ˈpræksɪs",
