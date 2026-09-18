@@ -63,7 +63,7 @@ stimuli:
 
       Before you begin, name which capability you are routing this to and the
       moment or mode token you would pass.
-    environment:
+    agent_environment:
       skills:
         - '../../.github/skills/design-thinking/ux-artifacts'
         - '../../.github/skills/design-thinking/ux-coaching'
@@ -338,20 +338,20 @@ stimuli:
       scenario: mural-environment-verdicts
     graders:
       - type: output-matches
-        name: wrong-cwd-remediation
+        name: ux-mural-cwd-remediation
         config:
           pattern: '(?is)wrong_cwd.*(?:repository root|skill directory|working directory).*(?:pause|stop|retry)'
       - type: output-matches
-        name: missing-dependency-remediation
+        name: ux-mural-dependency-remediation
         config:
           pattern: '(?is)deps_missing.*(?:dependency|dependencies|setup).*(?:pause|stop|retry)'
       - type: tool-calls
-        name: no-mural-call-after-non-ready-verdict
+        name: ux-mural-readiness-no-call
         config:
           disallowed:
             - name: '(?i)mural'
       - type: output-matches
-        name: no-false-publication
+        name: ux-mural-readiness-no-false-publish
         config:
           pattern: '(?i)(successfully|I (just )?(published|created|updated)|board (was|is) updated)'
           negate: true
@@ -362,7 +362,7 @@ stimuli:
       is `Synthetic Renewal Board`, but no extractor or facilitator mode and no
       create, mutate, append, or no-op action intent has been supplied. State
       the missing decisions and stop before routing or writing.
-    environment:
+    agent_environment:
       skills:
         - '../../.github/skills/design-thinking/ux-artifacts'
         - '../../.github/skills/experimental/mural'
@@ -374,20 +374,20 @@ stimuli:
       scenario: mural-explicit-routing
     graders:
       - type: output-matches
-        name: asks-for-mode-and-action-intent
+        name: ux-mural-routing-needs-intent
         config:
           pattern: '(?i)(extractor|facilitator).{0,180}(create|mutate|append|no-op)|(create|mutate|append|no-op).{0,180}(extractor|facilitator)'
       - type: output-matches
-        name: stops-before-routing
+        name: ux-mural-routing-stops
         config:
           pattern: '(?i)(stop|cannot proceed|before.{0,40}(route|write|publish)|need.{0,40}(mode|intent))'
       - type: tool-calls
-        name: no-mural-call-with-ambiguous-intent
+        name: ux-mural-routing-no-call
         config:
           disallowed:
             - name: '(?i)mural'
       - type: output-matches
-        name: no-false-publication
+        name: ux-mural-routing-no-false-publish
         config:
           pattern: '(?i)(successfully|I (just )?(published|created|updated)|board (was|is) updated)'
           negate: true
@@ -410,19 +410,19 @@ stimuli:
       scenario: mural-extractor-writeback
     graders:
       - type: output-matches
-        name: explicit-extractor-mode-retained
+        name: ux-mural-extractor-mode
         config:
           pattern: '(?i)extractor.{0,160}append'
       - type: output-matches
-        name: metadata-only-writeback
+        name: ux-mural-extractor-writeback-fields
         config:
           pattern: '(?is)(tags).*(hyperlink).*(parentId|parent id).*(never|no|not).{0,40}text'
       - type: output-matches
-        name: exact-write-requires-confirmation
+        name: ux-mural-extractor-needs-confirmation
         config:
           pattern: '(?i)(exact|target|intended).{0,160}(confirm|explicit confirmation|consent)'
       - type: output-matches
-        name: no-false-publication
+        name: ux-mural-extractor-no-false-publish
         config:
           pattern: '(?i)(successfully|I (just )?(published|created|updated)|board (was|is) updated)'
           negate: true
