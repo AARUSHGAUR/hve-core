@@ -1,8 +1,8 @@
 ---
 title: HVE Core
-description: Consolidated GitHub Copilot plugin and extension for an agentic SDLC that encodes context, governance, standards, and reusable engineering practices into workflows
+description: Agentic SDLC framework for context management, governance, shift-left engineering, reusable organizational knowledge, and consistent practices across teams
 author: Microsoft
-ms.date: 2026-09-18
+ms.date: 2026-09-19
 ms.topic: overview
 keywords:
   - hypervelocity engineering
