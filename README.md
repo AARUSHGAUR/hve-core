@@ -28,7 +28,7 @@ estimated_reading_time: 3
 
 HVE Core is a highly opinionated agentic software development lifecycle (SDLC) framework. Its core value lies in context management, governance, reusable organizational knowledge, and consistent engineering practices across teams
 
-HVE Core encodes engineering patterns into the workflow itself so they become part of the development process. Skills and workflows make expertise reusable by systematically bringing security requirements, ISO standards, compliance processes, architecture reviews, and organizational practices into engineering work.
+HVE Core encodes engineering patterns into the workflow itself so they become part of the development process. Skills and workflows make expertise reusable by systematically bringing security requirements, approximately 80 standards, compliance processes, architecture reviews, and organizational practices into engineering work.
 
 The central principle driving HVE Core is **"AI carries the rules, humans keep the judgment."** AI carries relevant context, standards, and process guidance through the workflow. People remain responsible for judgment, tradeoffs, review, and decision-making.
 
