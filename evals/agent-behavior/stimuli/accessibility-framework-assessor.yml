@@ -84,6 +84,7 @@ stimuli:
       category: agent-behavior
       advisory: "true"
       scenario: simulated-absent-runtime-evidence
+      threshold-rationale: semantic safeguards allow equivalent evidence language
     rubric:
       - >
         Assign NOT_ASSESSED for WCAG 2.1.1 because static markup only informs
@@ -118,6 +119,7 @@ stimuli:
       category: agent-behavior
       advisory: "true"
       scenario: simulated-malformed-runtime-evidence
+      threshold-rationale: semantic safeguards allow equivalent evidence language
     rubric:
       - >
         Reject the malformed payload as non-deciding, keep WCAG 4.1.3
@@ -153,6 +155,7 @@ stimuli:
       category: agent-behavior
       advisory: "true"
       scenario: simulated-mixed-method-evidence
+      threshold-rationale: semantic safeguards allow equivalent evidence language
     rubric:
       - >
         Permit PASS for WCAG 2.1.1 from the adequate keyboard probe, keep WCAG

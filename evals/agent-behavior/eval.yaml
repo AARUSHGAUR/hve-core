@@ -107,6 +107,7 @@ stimuli:
     category: agent-behavior
     advisory: "true"
     scenario: simulated-absent-runtime-evidence
+    threshold-rationale: semantic safeguards allow equivalent evidence language
     agent: accessibility-framework-assessor
   rubric:
   - |
@@ -139,6 +140,7 @@ stimuli:
     category: agent-behavior
     advisory: "true"
     scenario: simulated-malformed-runtime-evidence
+    threshold-rationale: semantic safeguards allow equivalent evidence language
     agent: accessibility-framework-assessor
   rubric:
   - |
@@ -172,6 +174,7 @@ stimuli:
     category: agent-behavior
     advisory: "true"
     scenario: simulated-mixed-method-evidence
+    threshold-rationale: semantic safeguards allow equivalent evidence language
     agent: accessibility-framework-assessor
   rubric:
   - |
@@ -227,6 +230,7 @@ stimuli:
     category: agent-behavior
     advisory: "true"
     scenario: simulated-state-and-research-failure
+    threshold-rationale: semantic safeguards allow equivalent recovery language
     agent: accessibility-planner
   rubric:
   - |
@@ -261,6 +265,7 @@ stimuli:
     category: agent-behavior
     advisory: "true"
     scenario: simulated-handoff-write-failure
+    threshold-rationale: semantic safeguards allow equivalent recovery language
     agent: accessibility-planner
   rubric:
   - |
@@ -315,6 +320,7 @@ stimuli:
     category: agent-behavior
     advisory: "true"
     scenario: simulated-required-probe-failure
+    threshold-rationale: semantic safeguards allow equivalent review language
     agent: accessibility-reviewer
   rubric:
   - |
@@ -349,6 +355,7 @@ stimuli:
     category: agent-behavior
     advisory: "true"
     scenario: simulated-malformed-verifier-output
+    threshold-rationale: semantic safeguards allow equivalent review language
     agent: accessibility-reviewer
   rubric:
   - |
@@ -381,6 +388,7 @@ stimuli:
     category: agent-behavior
     advisory: "true"
     scenario: simulated-report-generator-failure
+    threshold-rationale: semantic safeguards allow equivalent review language
     agent: accessibility-reviewer
   rubric:
   - |
@@ -461,6 +469,7 @@ stimuli:
     category: agent-behavior
     advisory: "true"
     scenario: synthetic-unsafe-partial-config
+    threshold-rationale: semantic safeguards allow equivalent inventory language
     agent: accessibility-surface-inventory
   rubric:
   - |
