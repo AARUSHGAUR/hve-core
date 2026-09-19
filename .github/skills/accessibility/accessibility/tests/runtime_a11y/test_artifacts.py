@@ -480,7 +480,7 @@ def test_given_two_writers_when_publication_overlaps_then_bundle_is_one_generati
     release_first_writer = threading.Event()
     second_writer_waiting = threading.Event()
     second_writer_entered = threading.Event()
-    failures: list[BaseException] = []
+    failures: list[Exception] = []
     original_lock = artifact_module._artifact_publication_lock
     original_replace = artifact_module.os.replace
 
@@ -513,7 +513,7 @@ def test_given_two_writers_when_publication_overlaps_then_bundle_is_one_generati
                 "octo/repo",
                 metadata=metadata,
             )
-        except BaseException as error:
+        except Exception as error:
             failures.append(error)
 
     monkeypatch.setattr(artifact_module, "_artifact_publication_lock", observed_lock)
