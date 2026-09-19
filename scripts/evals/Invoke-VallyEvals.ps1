@@ -434,9 +434,23 @@ if ($resolvedPlanPath) {
         exit 2
     }
     try {
+        $expectedArtifacts = @(
+            foreach ($shard in @($canonicalPlan.ordinaryShards)) {
+                foreach ($artifactKey in @($shard.artifacts)) {
+                    if ($null -ne $artifactKey) { [string]$artifactKey }
+                }
+            }
+        )
+        $expectedRunKeys = @(
+            foreach ($shard in @($canonicalPlan.ordinaryShards)) {
+                foreach ($runKey in @($shard.runKeys)) {
+                    if ($null -ne $runKey) { [string]$runKey }
+                }
+            }
+        )
         Assert-AgentEvalOwnership `
-            -ExpectedArtifact @($canonicalPlan.ordinaryShards.artifacts | ForEach-Object { [string]$_ } | Sort-Object -Unique) `
-            -ExpectedRunKey @($canonicalPlan.ordinaryShards.runKeys | ForEach-Object { [string]$_ } | Sort-Object -Unique) `
+            -ExpectedArtifact @($expectedArtifacts | Sort-Object -Unique) `
+            -ExpectedRunKey @($expectedRunKeys | Sort-Object -Unique) `
             -Shard @($canonicalPlan.ordinaryShards)
     }
     catch {

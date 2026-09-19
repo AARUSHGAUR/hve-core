@@ -787,6 +787,41 @@ Describe 'Invoke-VallyEvals.ps1 entry script' -Tag 'Integration' {
         $summary.perArtifact.Count | Should -Be 0
     }
 
+    It 'executes an empty canonical <Kind> shard without manufacturing ownership keys' -ForEach @(
+        @{ Kind = 'instruction' }
+        @{ Kind = 'skill' }
+    ) {
+        $fx = New-EvalFixture -Artifacts @() -Specs @(@{ Name = 'noop.yaml'; Yaml = 'name: noop' })
+        $planPath = Join-Path $fx.Root 'agent-eval-plan.json'
+        & pwsh -NoProfile -File (Join-Path $PSScriptRoot '../../evals/New-AgentEvalPlan.ps1') `
+            -ManifestPath $fx.ManifestPath `
+            -ChangedSpecManifestPath $fx.ChangedSpecManifestPath `
+            -EvalRoot $fx.EvalRoot `
+            -OutputPath $planPath `
+            -RepoRoot $fx.Root *> $null
+        $LASTEXITCODE | Should -Be 0
+        $plan = Get-Content -LiteralPath $planPath -Raw | ConvertFrom-Json -Depth 50
+        $shard = @($plan.ordinaryShards | Where-Object { $_.kind -eq $Kind })[0]
+
+        & pwsh -NoProfile -File $script:ScriptPath `
+            -ManifestPath $fx.ManifestPath `
+            -ChangedSpecManifestPath $fx.ChangedSpecManifestPath `
+            -PlanPath $planPath `
+            -ShardId $shard.id `
+            -Kind $Kind `
+            -EvalRoot $fx.EvalRoot `
+            -LogsDir $fx.LogsDir `
+            -RepoRoot $fx.Root `
+            -VallyCommand $script:StubPath *> $null
+
+        $LASTEXITCODE | Should -Be 0
+        $summary = Get-Content -LiteralPath $fx.SummaryPath -Raw | ConvertFrom-Json
+        $summary.producer | Should -Be $shard.id
+        $summary.planDigest | Should -Be $plan.planDigest
+        @($summary.perArtifact) | Should -HaveCount 0
+        $summary.totals.artifacts | Should -Be 0
+    }
+
     It 'Exits 0 and aggregates passing trials per artifact' {
         $spec = @'
 name: skill-cover
