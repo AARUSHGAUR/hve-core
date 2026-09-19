@@ -570,7 +570,8 @@ Describe 'Invoke-RustUnitTestNetworkTrace.ps1' -Tag 'Unit' {
         }
 
         It 'kills a timed-out named container before copying and removing it' {
-            $stub = New-DockerStub -Root $TestDrive -StartDelaySeconds 2
+            # The timeout bounds every stub invocation, so it must exceed pwsh startup cost.
+            $stub = New-DockerStub -Root $TestDrive -StartDelaySeconds 30
 
             $result = Invoke-RustUnitTestNetworkTrace `
                 -InputPath $script:InputPath `
@@ -581,7 +582,7 @@ Describe 'Invoke-RustUnitTestNetworkTrace.ps1' -Tag 'Unit' {
                 -ContainerUser '1000:1000' `
                 -DockerExecutable 'pwsh' `
                 -DockerPrefixArguments @('-NoProfile', '-File', $stub.Path) `
-                -TimeoutSeconds 1 `
+                -TimeoutSeconds 5 `
                 -NonAttesting
 
             $result.status | Should -Be 'Failed'
