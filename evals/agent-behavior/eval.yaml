@@ -4420,7 +4420,7 @@ stimuli:
   - type: output-matches
     name: arch-research-unavailable-no-memory
     config:
-      pattern: (?is)(training data|model memory).*(not|cannot|do not|instead of|substitut)
+      pattern: (?is)(training data|model memory).*(not|cannot|do not|instead of|substitute|substituting)
   - type: output-matches
     name: arch-research-unavailable-no-current-fact-claim
     config:
