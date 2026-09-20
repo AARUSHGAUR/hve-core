@@ -322,6 +322,37 @@ test('reading mode retains diagram meaning and visible focus', async ({ page }) 
   await expect(page.locator('#reading-button')).toBeFocused();
 });
 
+test('rapid walkthrough steps announce once, after focus settles', async ({ page }) => {
+  await openDeck(page);
+  await page.goto(`${deckPath}#/rpi-demo`);
+  await expect(page.locator('html')).toHaveAttribute('data-deck-ready', 'true');
+
+  // Counting writes to the live region is what distinguishes coalescing from a
+  // working announcement: without it each step writes its own superseded text.
+  await page.evaluate(() => {
+    const region = document.querySelector('#announcement');
+    (window as unknown as { __spoken: string[] }).__spoken = [];
+    new MutationObserver(() => {
+      const text = region?.textContent?.trim();
+      if (text) (window as unknown as { __spoken: string[] }).__spoken.push(text);
+    }).observe(region as Node, { childList: true, characterData: true, subtree: true });
+  });
+
+  const next = page.locator('section.present [data-action="next"]');
+  await expect(next).toBeEnabled();
+  let presses = 0;
+  while (presses < 3 && await next.isEnabled()) {
+    await next.press('Enter', { delay: 0 });
+    presses += 1;
+  }
+  expect(presses).toBeGreaterThan(1);
+
+  await page.waitForTimeout(600);
+  const spoken = await page.evaluate(() => (window as unknown as { __spoken: string[] }).__spoken);
+  expect(spoken).toHaveLength(1);
+  expect(spoken[0]).toContain(`step ${presses + 1} of`);
+});
+
 test('reading view permits vertical touch scrolling', async ({ browser }) => {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   try {
