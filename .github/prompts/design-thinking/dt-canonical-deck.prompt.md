@@ -37,8 +37,8 @@ Once slug is resolved, establish these paths:
 1. Project root: `.copilot-tracking/dt/{project-slug}`
 2. Canonical dir: `{project-root}/canonical`
 3. Render dir: `{project-root}/render`
-4. Customer-card skill root: `.github/skills/experimental/customer-card-render`
-5. PowerPoint skill root: `.github/skills/experimental/powerpoint`
+4. Customer-card skill root: the loaded `customer-card-render` skill root
+5. PowerPoint skill root: the loaded `powerpoint` skill root
 
 ## Step 2: Offer Branch (`action=offer` or `action=run`)
 
@@ -60,8 +60,8 @@ If accepted:
 
 Before executing build commands, verify the actual command parameters by reading the skill documentation:
 
-1. Check `.github/skills/experimental/customer-card-render/README.md` for the exact flags and parameters for `generate_cards.py`
-2. Check `.github/skills/experimental/powerpoint/SKILL.md` for the exact parameters for `Invoke-PptxPipeline.ps1` (PowerShell) or `invoke-pptx-pipeline.sh` (bash)
+1. Load `customer-card-render` and check its `README.md` for the exact flags and parameters for `generate_cards.py`
+2. Load `powerpoint` and check its skill instructions for the exact parameters for `Invoke-PptxPipeline.ps1` (PowerShell) or `invoke-pptx-pipeline.sh` (bash)
 3. Confirm parameter names match the commands shown in Step 3 below. If skill interfaces have changed, update commands accordingly and inform the user of any parameter differences
 
 ## Step 3: Build Branch (`action=build` or accepted `action=run`)
