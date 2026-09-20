@@ -11,8 +11,8 @@ Phase 2 of the Accessibility Planner captures which accessibility frameworks app
 
 The five default frameworks correspond to files under this skill's `references/frameworks/` directory:
 
-| Framework id  | Framework reference path                                                          | Default state       | Conformance level field                   |
-|---------------|-----------------------------------------------------------------------------------|---------------------|-------------------------------------------|
+| Framework id  | Framework reference path               | Default state       | Conformance level field                   |
+|---------------|----------------------------------------|---------------------|-------------------------------------------|
 | `wcag-22`     | `references/frameworks/wcag-22.md`     | enabled at level AA | required (`A`, `AA`, `AAA`); default `AA` |
 | `aria-apg`    | `references/frameworks/aria-apg.md`    | optional            | not applicable (`null`)                   |
 | `coga`        | `references/frameworks/coga.md`        | optional            | not applicable (`null`)                   |

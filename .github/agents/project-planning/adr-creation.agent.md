@@ -47,21 +47,21 @@ Every phase entry begins with a mandatory `read_file` of the indicated SKILL.md 
 
 ### Table A: `capture` and `from-planner-handoff` modes
 
-| Phase  | Required SKILL.md anchor                                                 | Required instruction file                                                         |
-|--------|--------------------------------------------------------------------------|-----------------------------------------------------------------------------------|
+| Phase  | Required SKILL.md anchor                       | Required instruction file                             |
+|--------|------------------------------------------------|-------------------------------------------------------|
 | Frame  | Load the `adr-author` skill and read `#frame`  | Read the auto-applied `adr-standards.instructions.md` |
 | Decide | Load the `adr-author` skill and read `#decide` | Read the auto-applied `adr-standards.instructions.md` |
 | Govern | Load the `adr-author` skill and read `#govern` | Read the auto-applied `adr-handoff.instructions.md`   |
 
 ### Table B: `adopt-template` mode
 
-| Phase            | Required SKILL.md anchor                                                 | Required instruction file and script                                                                                                                                      |
-|------------------|--------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Ingest           | Load the `adr-author` skill and read `#frame`  | Read the auto-applied `adr-byo-template.instructions.md`                                      |
+| Phase            | Required SKILL.md anchor                       | Required instruction file and script                                                                      |
+|------------------|------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
+| Ingest           | Load the `adr-author` skill and read `#frame`  | Read the auto-applied `adr-byo-template.instructions.md`                                                  |
 | Normalize        | Load the `adr-author` skill and read `#frame`  | Read the auto-applied `adr-byo-template.instructions.md` plus the skill's `scripts/normalize_template.py` |
-| Derive Questions | Load the `adr-author` skill and read `#frame`  | Read the auto-applied `adr-byo-template.instructions.md`                                      |
-| Fill             | Load the `adr-author` skill and read `#decide` | Read the auto-applied `adr-byo-template.instructions.md`                                      |
-| Govern           | Load the `adr-author` skill and read `#govern` | Read the auto-applied `adr-handoff.instructions.md` plus `adr-byo-template.instructions.md`   |
+| Derive Questions | Load the `adr-author` skill and read `#frame`  | Read the auto-applied `adr-byo-template.instructions.md`                                                  |
+| Fill             | Load the `adr-author` skill and read `#decide` | Read the auto-applied `adr-byo-template.instructions.md`                                                  |
+| Govern           | Load the `adr-author` skill and read `#govern` | Read the auto-applied `adr-handoff.instructions.md` plus `adr-byo-template.instructions.md`               |
 
 ## Six-Step Per-Turn Protocol
 
