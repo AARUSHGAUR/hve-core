@@ -28,7 +28,7 @@ stimuli:
       We completed general hypothesis framing and are entering experiment
       design. State which reusable skills you load, what each owns, and what
       you would do if the conditional ML skill were unavailable.
-    environment:
+    agent_environment:
       files:
         - src: ../../.github/agents/experimental/experiment-designer.agent.md
           dest: .github/copilot-instructions.md

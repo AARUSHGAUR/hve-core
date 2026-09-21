@@ -524,8 +524,8 @@ $script:RaiReviewerFixtureCaution
   }
 
   It 'Stages the RAI contract dependencies in one isolated response scenario' {
-    $files = @($script:RaiReviewerContract['environment']['files'])
-    $skills = @($script:RaiReviewerContract['environment']['skills'])
+    $files = @($script:RaiReviewerContract['agent_environment']['files'])
+    $skills = @($script:RaiReviewerContract['agent_environment']['skills'])
     $graderNames = @($script:RaiReviewerContract['graders'] | ForEach-Object { [string]$_['name'] })
 
     $files | Should -HaveCount 1

@@ -49,7 +49,7 @@ stimuli:
       The current PRD session has no `proposalResponseArtifacts` field. Read
       and validate the supplied evidence artifact, report the skill result and
       the PRD extension state, and do not replace the invalid artifact.
-    environment:
+    agent_environment:
       files:
         - src: ../../.github/agents/project-planning/prd-builder.agent.md
           dest: .github/copilot-instructions.md

@@ -171,6 +171,130 @@ Describe 'Test-EvalSpecCompliance (module)' -Tag 'Unit' {
         }
     }
 
+    Context 'Environment paths for <Scope> <Key>' -ForEach @(
+        @{ Scope = 'root'; Key = 'environment' }
+        @{ Scope = 'root'; Key = 'agent_environment' }
+        @{ Scope = 'stimulus'; Key = 'environment' }
+        @{ Scope = 'stimulus'; Key = 'agent_environment' }
+    ) {
+        BeforeEach {
+            $script:EnvironmentSpec = @{
+                name = 'environment-paths'
+                defaults = @{ executor = 'copilot-sdk' }
+                stimuli = @(@{ name = 's'; prompt = 'p'; graders = @(@{ type = 'noop' }) })
+            }
+            $script:EnvironmentOwner = if ($Scope -eq 'root') { $script:EnvironmentSpec } else { $script:EnvironmentSpec.stimuli[0] }
+            $script:EnvironmentField = if ($Scope -eq 'root') { $Key } else { "stimuli[0] (s).$Key" }
+            $script:EnvironmentSpecPath = 'suite/eval.yaml'
+            New-Item -ItemType Directory -Path (Join-Path $TestDrive 'suite/assets/skill') -Force | Out-Null
+            Set-Content -LiteralPath (Join-Path $TestDrive 'suite/assets/input.md') -Value 'fixture'
+        }
+
+        It 'Accepts spec-relative skills and bare or mapped file sources' {
+            $script:EnvironmentOwner[$Key] = @{
+                skills = @('assets/skill')
+                files = @('assets/input.md', @{ src = 'assets/input.md'; dest = 'remapped/input.md' })
+            }
+
+            $errors = @(Test-EvalSpecCompliance -Spec $script:EnvironmentSpec -SpecPath $script:EnvironmentSpecPath -RepoRoot $TestDrive)
+
+            $errors | Should -HaveCount 0
+        }
+
+        It 'Reports all unresolved sources with their indexed fields' {
+            $script:EnvironmentOwner[$Key] = @{
+                skills = @('missing-skill')
+                files = @('missing-file', @{ src = 'missing-mapped-file'; dest = 'output.md' })
+            }
+
+            $errors = @(Test-EvalSpecCompliance -Spec $script:EnvironmentSpec -SpecPath $script:EnvironmentSpecPath -RepoRoot $TestDrive)
+
+            $errors | Should -HaveCount 3
+            $errors.field | Should -Contain "$script:EnvironmentField.skills[0]"
+            $errors.field | Should -Contain "$script:EnvironmentField.files[0]"
+            $errors.field | Should -Contain "$script:EnvironmentField.files[1]"
+            foreach ($errorRecord in $errors) {
+                $errorRecord.path | Should -BeExactly $script:EnvironmentSpecPath
+                $errorRecord.message | Should -Match 'does not resolve.*relative to the spec directory'
+            }
+        }
+
+        It 'Reports empty paths and mappings without a source' {
+            $script:EnvironmentOwner[$Key] = @{
+                skills = @(' ')
+                files = @(@{ dest = 'output.md' }, @{ src = ''; dest = 'empty.md' })
+            }
+
+            $errors = @(Test-EvalSpecCompliance -Spec $script:EnvironmentSpec -SpecPath $script:EnvironmentSpecPath -RepoRoot $TestDrive)
+
+            $errors | Should -HaveCount 3
+            $errors.field | Should -Contain "$script:EnvironmentField.skills[0]"
+            $errors.field | Should -Contain "$script:EnvironmentField.files[0]"
+            $errors.field | Should -Contain "$script:EnvironmentField.files[1]"
+            foreach ($errorRecord in $errors) { $errorRecord.message | Should -Match '^Empty ' }
+        }
+
+        It 'Reports an invalid filesystem path without throwing' {
+            $script:EnvironmentOwner[$Key] = @{ files = @("invalid$([char]0)path") }
+
+            $errors = @(Test-EvalSpecCompliance -Spec $script:EnvironmentSpec -SpecPath $script:EnvironmentSpecPath -RepoRoot $TestDrive)
+
+            $errors | Should -HaveCount 1
+            $errors[0].field | Should -BeExactly "$script:EnvironmentField.files[0]"
+            $errors[0].message | Should -Match '^Invalid .* path'
+        }
+
+        It 'Accepts a named reference without requiring a filesystem path' {
+            $script:EnvironmentOwner[$Key] = 'named-environment-not-on-disk'
+
+            $errors = @(Test-EvalSpecCompliance -Spec $script:EnvironmentSpec -SpecPath $script:EnvironmentSpecPath -RepoRoot $TestDrive)
+
+            $errors | Should -HaveCount 0
+        }
+
+        It 'Rejects invalid environment values rather than treating them as mappings' {
+            foreach ($value in @($null, 42, @('array-value'), ' ')) {
+                $script:EnvironmentOwner[$Key] = $value
+
+                $errors = @(Test-EvalSpecCompliance -Spec $script:EnvironmentSpec -SpecPath $script:EnvironmentSpecPath -RepoRoot $TestDrive)
+
+                $errors | Should -HaveCount 1
+                $errors[0].field | Should -BeExactly $script:EnvironmentField
+                $errors[0].message | Should -Match 'mapping or a non-empty named reference'
+            }
+        }
+
+        It 'Rejects both aliases on the same object even when one is null' {
+            $script:EnvironmentOwner['environment'] = $null
+            $script:EnvironmentOwner['agent_environment'] = @{}
+
+            $errors = @(Test-EvalSpecCompliance -Spec $script:EnvironmentSpec -SpecPath $script:EnvironmentSpecPath -RepoRoot $TestDrive)
+
+            $errors | Should -HaveCount 1
+            $expectedField = if ($Scope -eq 'root') { 'agent_environment' } else { 'stimuli[0] (s).agent_environment' }
+            $errors[0].field | Should -BeExactly $expectedField
+            $errors[0].message | Should -Match 'not both'
+        }
+    }
+
+    It 'Allows different aliases at root and stimulus scope without mutating the spec' {
+        $spec = @{
+            name = 'mixed-aliases'
+            defaults = @{ executor = 'copilot-sdk' }
+            environment = 'parent-environment'
+            stimuli = @(@{
+                name = 's'; prompt = 'p'; graders = @(@{ type = 'noop' })
+                agent_environment = 'child-environment'
+            })
+        }
+        $before = $spec | ConvertTo-Json -Depth 10
+
+        $errors = @(Test-EvalSpecCompliance -Spec $spec -SpecPath 'inline.yaml' -RepoRoot $TestDrive)
+
+        $errors | Should -HaveCount 0
+        ($spec | ConvertTo-Json -Depth 10) | Should -BeExactly $before
+    }
+
     Context 'Optional moderation block' {
         It 'Accepts a valid moderation.threshold' {
             $path = Join-Path $script:ValidFixturesRoot 'valid-moderation-threshold.yaml'

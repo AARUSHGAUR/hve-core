@@ -85,6 +85,100 @@ function Resolve-EvalArtifactPath {
     return $null
 }
 
+function Test-EvalEnvironment {
+    <#
+    .SYNOPSIS
+    Validates an environment declaration on a spec or stimulus.
+
+    .DESCRIPTION
+    Checks alias conflicts and inline source paths relative to the spec directory.
+    Named references are left to Vally's configuration resolver.
+
+    .PARAMETER Owner
+    Spec or stimulus mapping containing the optional environment declaration.
+
+    .PARAMETER FieldPrefix
+    Diagnostic prefix for the owning stimulus, or an empty string for the root.
+
+    .PARAMETER SpecPath
+    Workspace-relative spec path used for diagnostics.
+
+    .PARAMETER SpecDirectory
+    Absolute directory used to resolve environment sources.
+
+    .OUTPUTS
+    [System.Collections.Generic.List[hashtable]] Environment validation errors.
+    #>
+    [CmdletBinding()]
+    [OutputType([System.Collections.Generic.List[hashtable]])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Collections.IDictionary]$Owner,
+
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
+        [string]$FieldPrefix,
+
+        [Parameter(Mandatory = $true)]
+        [string]$SpecPath,
+
+        [Parameter(Mandatory = $true)]
+        [string]$SpecDirectory
+    )
+
+    $errors = [System.Collections.Generic.List[hashtable]]::new()
+    $hasModern = $Owner.Contains('agent_environment')
+    $hasLegacy = $Owner.Contains('environment')
+    if (-not $hasModern -and -not $hasLegacy) { return $errors }
+
+    $key = if ($hasModern) { 'agent_environment' } else { 'environment' }
+    $field = if ($FieldPrefix) { "$FieldPrefix.$key" } else { $key }
+    if ($hasModern -and $hasLegacy) {
+        $errors.Add(@{ path = $SpecPath; field = $field; message = "Specify either 'agent_environment' or its deprecated alias 'environment', not both" })
+        return $errors
+    }
+
+    $environment = $Owner[$key]
+    if ($environment -is [string] -and -not [string]::IsNullOrWhiteSpace($environment)) {
+        return $errors
+    }
+    if ($environment -isnot [System.Collections.IDictionary]) {
+        $errors.Add(@{ path = $SpecPath; field = $field; message = "$field must be a mapping or a non-empty named reference" })
+        return $errors
+    }
+
+    foreach ($entryKey in @('skills', 'files')) {
+        if (-not $environment.Contains($entryKey)) { continue }
+        $entryIndex = -1
+        foreach ($rawPath in @($environment[$entryKey])) {
+            $entryIndex++
+            $entryField = "$field.$entryKey[$entryIndex]"
+            # File mappings stage src; dest is a workspace target, not a source.
+            $pathString = if ($rawPath -is [System.Collections.IDictionary]) {
+                if ($rawPath.Contains('src')) { [string]$rawPath['src'] } else { '' }
+            }
+            else {
+                [string]$rawPath
+            }
+            if ([string]::IsNullOrWhiteSpace($pathString)) {
+                $errors.Add(@{ path = $SpecPath; field = $entryField; message = "Empty $field.$entryKey path" })
+                continue
+            }
+            try {
+                $resolved = [System.IO.Path]::GetFullPath((Join-Path -Path $SpecDirectory -ChildPath $pathString -ErrorAction Stop))
+                if (-not (Test-Path -LiteralPath $resolved -ErrorAction Stop)) {
+                    $errors.Add(@{ path = $SpecPath; field = $entryField; message = "$field.$entryKey path '$pathString' does not resolve to an existing path (resolved to '$resolved'); vally resolves it relative to the spec directory" })
+                }
+            }
+            catch {
+                $errors.Add(@{ path = $SpecPath; field = $entryField; message = "Invalid $field.$entryKey path" })
+            }
+        }
+    }
+
+    return $errors
+}
+
 function Test-EvalSpecCompliance {
     <#
     .SYNOPSIS
@@ -93,7 +187,8 @@ function Test-EvalSpecCompliance {
     .DESCRIPTION
     Checks required top-level keys, executor whitelist, per-stimulus required keys
     (name, prompt or turns, graders), and per-stimulus backlink tags (skill/agent/prompt/instruction)
-    when present. Returns a list of errors with `path` and `message` for each violation.
+    when present, plus root and stimulus environment source paths under either
+    supported alias. Returns a list of errors with `path` and `message` for each violation.
 
     .PARAMETER Spec
     Parsed eval spec object (from ConvertFrom-Yaml).
@@ -176,37 +271,9 @@ function Test-EvalSpecCompliance {
         }
     }
 
-    if ($Spec.ContainsKey('environment')) {
-        $environment = $Spec['environment']
-        if ($environment -is [System.Collections.IDictionary]) {
-            $specDir = Split-Path -Path (Join-Path -Path $RepoRoot -ChildPath $SpecPath) -Parent
-            foreach ($entryKey in @('skills', 'files')) {
-                if (-not $environment.ContainsKey($entryKey)) { continue }
-                $entryPaths = @($environment[$entryKey])
-                $entryIndex = -1
-                foreach ($rawPath in $entryPaths) {
-                    $entryIndex++
-                    # `environment.files` accepts both a bare path and a `src`/`dest`
-                    # mapping. Coercing the mapping with [string] yields the type name
-                    # rather than the path, so a valid seeded spec would be reported as
-                    # an unresolvable 'System.Collections.Hashtable' path.
-                    $pathString = if ($rawPath -is [System.Collections.IDictionary]) {
-                        if ($rawPath.Contains('src')) { [string]$rawPath['src'] } else { '' }
-                    }
-                    else {
-                        [string]$rawPath
-                    }
-                    if ([string]::IsNullOrWhiteSpace($pathString)) {
-                        $errors.Add(@{ path = $SpecPath; field = "environment.$entryKey[$entryIndex]"; message = "Empty environment.$entryKey path" })
-                        continue
-                    }
-                    $resolved = [System.IO.Path]::GetFullPath((Join-Path -Path $specDir -ChildPath $pathString))
-                    if (-not (Test-Path -LiteralPath $resolved)) {
-                        $errors.Add(@{ path = $SpecPath; field = "environment.$entryKey[$entryIndex]"; message = "environment.$entryKey path '$pathString' does not resolve to an existing path (resolved to '$resolved'); vally resolves it relative to the spec directory" })
-                    }
-                }
-            }
-        }
+    $specDir = Split-Path -Path (Join-Path -Path $RepoRoot -ChildPath $SpecPath) -Parent
+    foreach ($errorRecord in (Test-EvalEnvironment -Owner $Spec -FieldPrefix '' -SpecPath $SpecPath -SpecDirectory $specDir)) {
+        $errors.Add($errorRecord)
     }
 
     if (-not $Spec.ContainsKey('stimuli')) {
@@ -236,6 +303,10 @@ function Test-EvalSpecCompliance {
 
         $stimulusName = if ($stimulus.ContainsKey('name')) { [string]$stimulus['name'] } else { '' }
         $stimulusLabel = if ([string]::IsNullOrWhiteSpace($stimulusName)) { $fieldPrefix } else { "$fieldPrefix ($stimulusName)" }
+
+        foreach ($errorRecord in (Test-EvalEnvironment -Owner $stimulus -FieldPrefix $stimulusLabel -SpecPath $SpecPath -SpecDirectory $specDir)) {
+            $errors.Add($errorRecord)
+        }
 
         if (-not $stimulus.ContainsKey('name') -or [string]::IsNullOrWhiteSpace($stimulusName)) {
             $errors.Add(@{ path = $SpecPath; field = "$fieldPrefix.name"; message = 'Stimulus missing required key: name' })
