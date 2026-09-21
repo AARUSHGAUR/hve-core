@@ -117,7 +117,14 @@ Describe 'VallyRunner module' -Tag 'Unit' {
             New-Item -ItemType Directory -Path $runDir -Force | Out-Null
             $failedRecord = @{
                 trajectory = @{ stimulus = @{ name = 'failed-stimulus' }; output = 'raw model output'; metrics = @{ wallTimeMs = 9 } }
-                gradeResult = @{ passed = $false; score = 0.4; graderDetail = 'raw grader detail' }
+                gradeResult = @{
+                    passed = $false
+                    score = 0.4
+                    details = @(
+                        @{ name = 'output-matches'; configuredName = 'required-marker'; graderType = 'output-matches'; passed = $false; score = 0; evidence = 'raw evidence' }
+                        @{ name = 'tool-calls'; configuredName = 'write-observed'; graderType = 'tool-calls'; passed = $true; score = 1; evidence = 'raw evidence' }
+                    )
+                }
             } | ConvertTo-Json -Depth 6 -Compress
             $erroredRecord = @{
                 trajectory = @{ stimulus = @{ name = 'errored-stimulus' }; output = 'transient raw output' }
@@ -134,10 +141,16 @@ Describe 'VallyRunner module' -Tag 'Unit' {
             $diagnostics[0].score | Should -Be 0.4
             $diagnostics[0].passed | Should -BeFalse
             $diagnostics[0].errorState | Should -BeNullOrEmpty
+            @($diagnostics[0].failedGraders) | Should -HaveCount 1
+            $diagnostics[0].failedGraders[0].name | Should -Be 'required-marker'
+            $diagnostics[0].failedGraders[0].graderType | Should -Be 'output-matches'
+            $diagnostics[0].failedGraders[0].score | Should -Be 0
+            $diagnostics[0].failedGraders[0].PSObject.Properties.Name | Should -Not -Contain 'evidence'
             $diagnostics[1].ordinal | Should -Be 2
             $diagnostics[1].outcome | Should -Be 'errored'
             $diagnostics[1].passed | Should -BeNullOrEmpty
             $diagnostics[1].errorState | Should -Be 'no-gradeable-verdict'
+            $diagnostics[1].failedGraders | Should -BeNullOrEmpty
             $diagnostics[0].PSObject.Properties.Name | Should -Not -Contain 'trajectory'
             $diagnostics[0].PSObject.Properties.Name | Should -Not -Contain 'output'
             $diagnostics[0].PSObject.Properties.Name | Should -Not -Contain 'graderDetail'
@@ -2439,10 +2452,8 @@ stimuli:
         $summary.perArtifact[0].advisoryFailed | Should -Be 1
     }
 
-    It 'Does not gate sub-threshold trial dips when the spec passes aggregate (exit 0)' {
-        # An authoritative stimulus whose per-trial score dips but whose aggregate
-        # still meets threshold (vally exit 0) must not gate: the failure is
-        # sub-threshold noise, demoted to advisory.
+    It 'Gates authoritative trial failures even when vally exits 0' {
+        # The harness threshold verdict is authoritative because --require-pass is absent.
         $spec = @'
 name: skill-cover
 stimuli:
@@ -2463,7 +2474,7 @@ stimuli:
 
         $env:STUB_VALLY_MODE = 'per-stim'
         $env:STUB_VALLY_STIM_RESULTS_JSON = '{"stim-a":false,"stim-b":false}'
-        # No STUB_VALLY_FAIL_ON_ANY: vally exits 0 (aggregate passed).
+        # No STUB_VALLY_FAIL_ON_ANY: vally exits 0 despite the failed trials.
 
         & pwsh -NoProfile -File $script:ScriptPath `
             -ManifestPath $fx.ManifestPath `
@@ -2473,15 +2484,15 @@ stimuli:
             -VallyCommand $script:StubPath `
             -SkipInputModeration `
             -SkipOutputModeration *> $null
-        $LASTEXITCODE | Should -Be 0
+        $LASTEXITCODE | Should -Be 1
 
         $summary = Get-Content -LiteralPath $fx.SummaryPath -Raw | ConvertFrom-Json
-        $summary.totals.failedSpecs | Should -Be 0
-        $summary.perSpec[0].status | Should -Be 'advisory-fail'
-        $summary.perSpec[0].authoritativeFailed | Should -Be 0
-        $summary.perSpec[0].advisoryFailed | Should -Be 2
-        $summary.perArtifact[0].status | Should -Be 'advisory-fail'
-        $summary.perArtifact[0].authoritativeFailed | Should -Be 0
+        $summary.totals.failedSpecs | Should -Be 1
+        $summary.perSpec[0].status | Should -Be 'fail'
+        $summary.perSpec[0].authoritativeFailed | Should -Be 1
+        $summary.perSpec[0].advisoryFailed | Should -Be 1
+        $summary.perArtifact[0].status | Should -Be 'fail'
+        $summary.perArtifact[0].authoritativeFailed | Should -Be 1
     }
 
     It 'Falls back to legacy spec-level advisory detection when no stimulus carries the tag' {
@@ -2518,12 +2529,8 @@ stimuli:
         $summary.perSpec[0].PSObject.Properties.Name | Should -Not -Contain 'advisoryFailed'
     }
 
-    It 'Does not gate a no-advisory spec when vally exits 0 despite a per-trial dip' {
-        # Regression: a spec with no advisory-tagged stimulus (for example
-        # baseline-equivalence/stimuli.yml resolved via an agent tag) must not gate
-        # the build on a sub-threshold per-trial dip when vally reports an aggregate
-        # pass (exit 0). The 'mixed' stub mode emits one passing and one failing
-        # trial and exits 0.
+    It 'Gates a no-advisory spec on its own threshold verdict when vally exits 0' {
+        # The harness must gate on the failed trial even when vally exits 0.
         $spec = @'
 name: agent-cover
 stimuli:
@@ -2547,14 +2554,14 @@ stimuli:
             -VallyCommand $script:StubPath `
             -SkipInputModeration `
             -SkipOutputModeration *> $null
-        $LASTEXITCODE | Should -Be 0
+        $LASTEXITCODE | Should -Be 1
 
         $summary = Get-Content -LiteralPath $fx.SummaryPath -Raw | ConvertFrom-Json
-        $summary.totals.failedSpecs | Should -Be 0
+        $summary.totals.failedSpecs | Should -Be 1
         $summary.totals.assertionsFailed | Should -Be 1
-        $summary.perSpec[0].status | Should -Be 'advisory-fail'
+        $summary.perSpec[0].status | Should -Be 'fail'
         $summary.perSpec[0].isAdvisory | Should -BeFalse
-        $summary.perArtifact[0].status | Should -Be 'advisory-fail'
+        $summary.perArtifact[0].status | Should -Be 'fail'
     }
 
     It 'Excludes a baseline-equivalence spec from the generic run plan' {

@@ -818,14 +818,7 @@ foreach ($runKey in $uniqueSpecRuns.Keys) {
             else { $authoritativeFailed += $unattributedFailed }
         }
 
-        # A zero vally exit means the spec met its aggregate threshold (the author's
-        # runs/threshold contract), so every stimulus passed overall. Any per-trial
-        # dips counted in assertionsFailed are sub-threshold noise, not merge
-        # blockers; demote them to advisory so an aggregate-passing spec never gates.
-        if ($result.exitCode -eq 0 -and $authoritativeFailed -gt 0) {
-            $advisoryFailed += $authoritativeFailed
-            $authoritativeFailed = 0
-        }
+        # Trust the harness threshold verdict; vally exits nonzero for verdicts only with --require-pass.
 
         $result['advisoryPassed'] = $advisoryPassed
         $result['advisoryFailed'] = $advisoryFailed
@@ -900,18 +893,12 @@ foreach ($runKey in $uniqueSpecRuns.Keys) {
         $isAdvisory = (Test-SpecIsAdvisory -SpecPath $specAbs) -or $specIsEquivalence
         $result['isAdvisory'] = $isAdvisory
 
-        # A zero vally exit means the spec met its aggregate threshold (the author's
-        # runs/threshold contract), so per-trial assertion dips recorded in
-        # assertionsFailed are sub-threshold noise, not merge blockers. Mirror the
-        # advisory-map branch above and gate only on a nonzero vally exit or a
-        # moderation failure. Without this, a spec that carries no advisory-tagged
-        # stimulus would gate the build on a single sub-threshold dip even though
-        # vally reported an aggregate pass.
-        $hardFailure = ($result.exitCode -ne 0) -or $outputModeration.flagged -or $outputModeration.error
-        $subThresholdDip = (-not $hardFailure) -and ($result.assertionsFailed -gt 0)
+        # Gate authoritative failures using the harness threshold verdict, not vally's operational exit.
+        $hardFailure = ($result.exitCode -ne 0) -or $outputModeration.flagged -or
+            $outputModeration.error -or ($result.assertionsFailed -gt 0)
 
         if (-not $result.ContainsKey('status')) {
-            $result['status'] = if ($hardFailure) { 'fail' } elseif ($subThresholdDip) { 'advisory-fail' } else { 'pass' }
+            $result['status'] = if ($hardFailure) { 'fail' } else { 'pass' }
         }
 
         $specResults[$runKey] = $result
@@ -929,9 +916,6 @@ foreach ($runKey in $uniqueSpecRuns.Keys) {
                     break
                 }
             }
-        }
-        elseif ($subThresholdDip) {
-            Write-Host "::warning file=$specRel::Sub-threshold per-trial dips (exit=0, assertionsFailed=$($result.assertionsFailed)); aggregate threshold met, not promoting to CI failure"
         }
     }
 }

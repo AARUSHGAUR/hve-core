@@ -257,13 +257,36 @@ function Read-VallyResultsJsonl {
         }
 
         if ($trialErrored -or -not $trialPassed) {
+            # Omit raw evidence text because it has not passed the separate content-moderation job.
+            $failedGraders = $null
+            if ($gradeResult -and $gradeResult.PSObject.Properties['details'] -and $gradeResult.details) {
+                $failedGraders = @(
+                    foreach ($detail in @($gradeResult.details)) {
+                        if ($null -eq $detail) { continue }
+                        if ($detail.PSObject.Properties['passed'] -and [bool]$detail.passed) { continue }
+                        $graderName = if ($detail.PSObject.Properties['configuredName'] -and
+                            -not [string]::IsNullOrWhiteSpace([string]$detail.configuredName)) {
+                            [string]$detail.configuredName
+                        }
+                        elseif ($detail.PSObject.Properties['name']) { [string]$detail.name }
+                        else { 'unnamed' }
+                        [ordered]@{
+                            name       = $graderName
+                            graderType = if ($detail.PSObject.Properties['graderType']) { [string]$detail.graderType } else { $null }
+                            score      = if ($detail.PSObject.Properties['score']) { $detail.score } else { $null }
+                        }
+                    }
+                )
+            }
+
             $failedOrErroredTrials.Add([ordered]@{
-                ordinal      = $trials
-                outcome      = if ($trialErrored) { 'errored' } else { 'failed' }
-                stimulusName = $stimulusName
-                score        = if ($hasScore) { $scoreValue } else { $null }
-                passed       = if ($hasPassed) { [bool]$gradeResult.passed } else { $null }
-                errorState   = if ($trialErrored) { 'no-gradeable-verdict' } else { $null }
+                ordinal       = $trials
+                outcome       = if ($trialErrored) { 'errored' } else { 'failed' }
+                stimulusName  = $stimulusName
+                score         = if ($hasScore) { $scoreValue } else { $null }
+                passed        = if ($hasPassed) { [bool]$gradeResult.passed } else { $null }
+                errorState    = if ($trialErrored) { 'no-gradeable-verdict' } else { $null }
+                failedGraders = $failedGraders
             }) | Out-Null
         }
     }
