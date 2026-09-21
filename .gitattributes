@@ -23,3 +23,18 @@
 # to prevent CRLF normalization churn during merges.
 plugins/** linguist-generated=true
 plugins/**/*.md text eol=lf
+
+# Slide bundles are byte-compared by `npm run slides:check`, and the bundler
+# inlines its sources verbatim. Pinning both the sources and the generated
+# bundle to LF keeps that comparison valid on Windows checkouts.
+slides/**/*.html text eol=lf
+slides/**/*.css text eol=lf
+slides/**/*.js text eol=lf
+slides/**/*.json text eol=lf
+slides/**/*.txt text eol=lf
+.github/skills/hve-slides/templates/deck/*.html text eol=lf
+.github/skills/hve-slides/templates/deck/*.css text eol=lf
+.github/skills/hve-slides/templates/deck/*.js text eol=lf
+.github/skills/hve-slides/templates/deck/*.json text eol=lf
+docs/slides/*.html linguist-generated=true
+docs/slides/*.html text eol=lf
