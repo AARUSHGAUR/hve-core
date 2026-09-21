@@ -1,9 +1,9 @@
 ---
 title: rpi-plan-critique
-description: Independently assess an RPI plan against supplied evidence without editing it. Use for a current initial or planner-authorized recovery critique run.
+description: "Independently assess an RPI plan without editing it. Use for a current initial, planner-authorized recovery, or infrastructure-retry critique run."
 sidebar_position: 3
 author: Microsoft
-ms.date: 2026-09-16
+ms.date: 2026-09-20
 ms.topic: reference
 keywords:
   - skill
@@ -23,14 +23,16 @@ keywords:
 ## What it does
 
 <!-- BEGIN AUTO-GENERATED: overview -->
-Independently assess an RPI plan against supplied evidence without editing it. Use for a current initial or planner-authorized recovery critique run.
+Independently assess an RPI plan without editing it. Use for a current initial, planner-authorized recovery, or infrastructure-retry critique run.
 <!-- END AUTO-GENERATED: overview -->
 
 ## When to use it
 
-`rpi-plan-critique` is the readiness gate inside planning. [rpi-plan](rpi-plan) runs it after the planner judges the plan implementation-ready, and the critique writes its assigned artifact under `.copilot-tracking/reviews/plans/` without editing the plan. Any terminal status (`Complete`, `Partial`, or `Blocked`) consumes the assessment; the planner disposes every `PC-xxx` finding without a closure critique.
+`rpi-plan-critique` is the readiness gate inside planning. [rpi-plan](rpi-plan) runs it after the plan is implementation-ready, and the critique writes its assigned artifact under `.copilot-tracking/reviews/plans/` without editing the plan. Substantive `Complete`, `Partial` or `Blocked` assessments are not repeated; the planner disposes every `PC-xxx` finding without a closure critique. A transport failure with no assessment has no verdict and cannot establish readiness.
 
-The current critique run may execute its own verified initial or recovery reservation. A saved `started` record alone does not authorize a replacement run. Only `rpi-plan` can authorize one task-specific, user-confirmed recovery after an interruption without a terminal result; the critique cannot grant that exception or reset a consumed recovery.
+The current run may execute its own verified initial, recovery or infrastructure-retry reservation. A saved `started` record alone does not authorize a replacement run. Only `rpi-plan` can authorize the single generic recovery and, after it is consumed, two additional infrastructure-only retries. Each needs fresh consent, positive failure evidence, ended-run proof and evidence reconciliation. The critic cannot authorize retries or reset counters.
+
+After verified infrastructure exhaustion, `rpi-plan` may commission an independent human-authored complete critique with specific consent. Exhausted counts alone do not permit it: active/unknown runs, substantive results and unresolved assessment fragments remain in reconciliation. This skill cannot generate or attest that human report. See [the exhaustion guidance](rpi-plan#when-infrastructure-retries-are-exhausted).
 
 Invoke it directly only when you want an independent, evidence-bounded read of an existing plan and no critique has run for that task yet. A `Pass`, `Revise`, or `Blocked` verdict is advisory: confirmed user direction outranks critique advice, and a `Revise` verdict means the planner revises or asks for a decision, not that the critique loops.
 

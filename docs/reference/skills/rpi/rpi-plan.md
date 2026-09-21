@@ -1,9 +1,9 @@
 ---
 title: rpi-plan
-description: Create or resume an evidence-based RPI implementation plan. Use for planning from supplied context or reconciling an interrupted planning critique.
+description: "Create or resume an evidence-based RPI implementation plan. Use for planning, interrupted critiques, or bounded critique infrastructure recovery."
 sidebar_position: 4
 author: Microsoft
-ms.date: 2026-09-16
+ms.date: 2026-09-20
 ms.topic: reference
 keywords:
   - skill
@@ -23,7 +23,7 @@ keywords:
 ## What it does
 
 <!-- BEGIN AUTO-GENERATED: overview -->
-Create or resume an evidence-based RPI implementation plan. Use for planning from supplied context or reconciling an interrupted planning critique.
+Create or resume an evidence-based RPI implementation plan. Use for planning, interrupted critiques, or bounded critique infrastructure recovery.
 <!-- END AUTO-GENERATED: overview -->
 
 ## When to use it
@@ -32,7 +32,7 @@ Use `rpi-plan` when adequate evidence exists and the work needs a sequenced, ver
 
 The Phase Checklist opens with **Before** and **After** Mermaid diagrams comparing the evidence-backed starting state with the intended result of all phases. Each phase highlights its changes within the After view, including labeled removal context when needed. Diagrams inherit the renderer's light or dark theme, use readable sans-serif labels, and pair custom highlight fills with explicit contrasting text colors.
 
-Planning owns two internal gates. It activates [rpi-research](rpi-research) only for a demonstrated readiness gap, and it runs an initial [rpi-plan-critique](rpi-plan-critique) after the planner judges the plan implementation-ready. A terminal assessment is not repeated. The only additional attempt is one explicitly confirmed recovery of an interrupted reservation without a terminal result. Confirmed user direction outranks critique advice.
+Planning owns two internal gates. It activates [rpi-research](rpi-research) only for a demonstrated readiness gap, and runs [rpi-plan-critique](rpi-plan-critique) once the plan is implementation-ready. Substantive terminal assessments are not repeated. The planner can authorize one generic interruption recovery, then two additional infrastructure-only retries with separate consent and evidence checks. Confirmed user direction outranks critique advice.
 
 The planner drafts every phase itself. Before drafting, it looks for skills and subagents whose descriptions say they are used during planning or with `rpi-plan` and follows each description's guidance on when and how to use it; no subagent is required.
 
@@ -54,7 +54,21 @@ Reach for a different asset when:
 
 If planning reports `started` but no result survived, resume the same task through `rpi-plan`. It checks recorded evidence, confirms the original critique run has ended, and verifies the saved plan and state. When eligible, it asks for your approval of one recovery for the identified task and candidate, preserving original records and writing a separate recovery result.
 
-A terminal `Complete`, `Partial`, or `Blocked` result remains binding even if its file is missing. An already-reserved recovery cannot be repeated. Missing evidence is not a pass, and implementation remains gated on an actual assessment and resolved findings.
+A substantive `Complete`, `Partial` or `Blocked` result remains binding even if its file is missing. A saved reservation cannot be replayed. Missing evidence is not a pass: implementation requires an actual Complete assessment, closed blocking findings and explicit residual-risk dispositions.
+
+If both the initial attempt and generic recovery ended in verified infrastructure failures without an assessment, the planner may request up to two additional infrastructure retries. Each needs confirmed ended runs, reconciled saved and late evidence, an identified candidate hash and fresh consent. A network-looking error or absent file alone is insufficient. Every reservation consumes its slot, even if interrupted; changing sessions, candidates or hosts does not reset the task's budget.
+
+For example, two host-recorded connection failures with confirmed completion and no assessment may qualify for another consent request. A substantive critique with blocking findings, an unknown run status, or unresolved assessment fragments does not qualify.
+
+### When infrastructure retries are exhausted
+
+The planner stops automated critique calls and prepares sanitized diagnostics: attempt IDs, candidate hashes, evidence locations, failure and lifecycle status, and the host/network support owner and evidence needed. Repairing the transport does not replenish retry slots.
+
+Exhaustion alone does not authorize another assessment. Active or unknown runs must be reconciled first; substantive results follow their existing finding dispositions. Only confirmed ended infrastructure-only failures with no assessment or unresolved fragments permit a specifically authorized independent human critique.
+
+The human supplies a complete assessment of the saved candidate, including assessor provenance, independence, coverage, verdict and findings. The agent verifies that report against the candidate and all surviving evidence; it cannot write or sign the human's assessment. Approval alone or a mismatched candidate remains blocked. Late results are retained and reconciled, never discarded in favor of a passing report.
+
+### Preserve evidence when resuming
 
 For example, an editor-visible plan that is absent on disk must be saved or synchronized and verified before recovery. Do not delete the reservation to restart. A reconstructed candidate must be identified and approved as current, not represented as the lost original.
 

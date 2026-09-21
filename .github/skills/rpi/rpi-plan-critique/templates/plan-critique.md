@@ -6,14 +6,19 @@
 * Task ID: {{task_id}}
 * Critique date: {{YYYY-MM-DD}}
 * Plan: .copilot-tracking/plans/{{YYYY-MM-DD}}/{{task_slug}}-plan.md
-* Critique execution status: {{Complete, Partial, or Blocked}}
+* Invocation outcome: {{completed_or_preflight_limitation_or_host_failure_or_unknown}}
+* Assessment execution/availability: {{Complete_Partial_Blocked_or_not_produced_or_unknown}}
 * Critique depth: {{standard_or_deep}}
 * Depth provenance: {{default_or_explicit_user_request}}
-* Invocation consumed: yes
-* Attempt ID and kind: {{unique_attempt_id_and_initial_or_recovery}}
+* Attempt slot consumed: yes
+* Attempt ID and kind: {{unique_attempt_id_and_initial_recovery_infrastructure_retry_or_human}}
 * Candidate identity and saved hash boundary: {{revision_hash_and_reservation_metadata_boundary}}
 * Current-run provenance: {{immediate_planner_activation_or_standalone_initial_reservation}}
 * Original attempt and recovery approval: {{not_applicable_or_original_pointer_and_task_specific_consent}}
+* Prior attempt and reconciliation pointers: {{all_applicable_attempts_and_late_evidence_or_none}}
+* Human assessor provenance: {{not_applicable_or_human_supplied_identity_role_independence_confirmation_date_and_specific_authorization}}
+
+<!-- For no assessment, record the limitation and unavailable verdict rather than fabricated coverage or findings. Infrastructure classification belongs to the planning parent. Only a human may author or attest a human assessment. -->
 
 ## Inputs and Criterion Boundary
 
@@ -32,7 +37,7 @@
 
 ## Verdict
 
-* Verdict: {{Pass_Revise_or_Blocked}}
+* Verdict: {{Pass_Revise_Blocked_or_unavailable_when_no_assessment}}
 * Rationale: {{concise_evidence_based_rationale}}
 
 ## Findings

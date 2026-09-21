@@ -5722,3 +5722,275 @@ stimuli:
         name: skill-rpi-critique-contradiction-versus-incomplete--97c4b166
         config:
           pattern: '(?i)^\s*A:[ \t]*contradiction[ \t]*\r?\nB:[ \t]*evidence-limitation\s*$'
+  - name: skill-rpi-infrastructure-two-failures
+    prompt: |
+      The initial critique and its approved generic recovery both ended with
+      host-recorded net::ERR_SSL_BAD_RECORD_MAC_ALERT transport failures.
+      Completion records verify both runs ended. Reconciliation of all saved
+      paths and returns found no assessment, verdict or unresolved fragments.
+      The candidate hash is unchanged. No infrastructure retry is reserved,
+      and no consent for one exists. Choose the next action: ask-specific-consent,
+      retry-automatically, or permanently-exhausted. Return only that action.
+    environment:
+      skills:
+        - ../../.github/skills/rpi/rpi-plan
+    tags:
+      category: behavior-conformance
+      skill: rpi-plan
+      shape: knowledge
+      advisory: "true"
+      prompt_sha256: ba9681e1fe9ff5c02eb40a62118636c6493a42caeeecf7e51bef673050e70172
+    graders:
+      - type: output-matches
+        name: skill-rpi-infrastructure-two-failures-consent
+        config:
+          pattern: '(?i)^\s*ask-specific-consent\s*$'
+  - name: skill-rpi-infrastructure-current-admission
+    prompt: |
+      The planner verified infrastructure-only failure, all prior runs ended,
+      no substantive result or unresolved fragments, and the saved candidate.
+      Initial and generic recovery slots are consumed. The user approved the
+      first infrastructure retry for this hash and output. Evidence rechecked
+      unchanged; the planner saved and read back its reservation, then immediately
+      activated this matching run with the readable canonical parent reference.
+      Should the critic assess or reconcile-as-stale? May it overwrite original
+      output? Return two lines: Action: assess or reconcile-as-stale;
+      Original: preserve or overwrite.
+    environment:
+      skills:
+        - ../../.github/skills/rpi/rpi-plan
+        - ../../.github/skills/rpi/rpi-plan-critique
+    tags:
+      category: behavior-conformance
+      skill: rpi-plan-critique
+      shape: knowledge
+      advisory: "true"
+      prompt_sha256: e32d313bd3029ec029532ccf146ddca47f863dfdd00eeb94b76001d3ef82e4ac
+    graders:
+      - type: output-matches
+        name: skill-rpi-infrastructure-current-admission-current-run
+        config:
+          pattern: '(?i)^\s*Action:[ \t]*assess[ \t]*\r?\nOriginal:[ \t]*preserve\s*$'
+  - name: skill-rpi-infrastructure-outcome-boundary
+    prompt: |
+      Classify infrastructure-retry eligibility for independent tasks whose
+      initial and generic recovery reservations are consumed. A has a substantive
+      Complete/Revise critique. B has a substantive Partial critique. C has a
+      Blocked critique about missing plan evidence. D has only an absent output
+      and unknown originating-run status. E has verified ended transport failures,
+      no assessment after reconciliation, current saved candidate and unused
+      infrastructure allowance. Return exactly five lines A through E, each
+      labeled eligible or ineligible. Eligibility does not itself grant consent.
+    environment:
+      skills:
+        - ../../.github/skills/rpi/rpi-plan
+    tags:
+      category: behavior-conformance
+      skill: rpi-plan
+      shape: knowledge
+      advisory: "true"
+      prompt_sha256: 8f2cf5d624e633e67117f3f6aa318d03311888ed66a6c8b125fa48adfde83691
+    graders:
+      - type: output-matches
+        name: skill-rpi-infrastructure-outcome-boundary-classification
+        config:
+          pattern: '(?i)^\s*A:[ \t]*ineligible[ \t]*\r?\nB:[ \t]*ineligible[ \t]*\r?\nC:[ \t]*ineligible[ \t]*\r?\nD:[ \t]*ineligible[ \t]*\r?\nE:[ \t]*eligible\s*$'
+  - name: skill-rpi-infrastructure-consent-boundary
+    prompt: |
+      An infrastructure retry is otherwise eligible. Choose the action for each
+      independent case: A has only Full Auto and policy approval. B has consent
+      for the first infrastructure attempt, which already failed; the second is
+      now eligible. C has specific consent but the candidate hash changed before
+      reservation. Return three lines: A and B use ask-specific-consent or run;
+      C uses reconcile-and-renew-consent or run.
+    environment:
+      skills:
+        - ../../.github/skills/rpi/rpi-plan
+    tags:
+      category: behavior-conformance
+      skill: rpi-plan
+      shape: knowledge
+      advisory: "true"
+      prompt_sha256: 323fbb8f8e0ebdb56856105eb889fa0879345a2fb3ada1ecdeb7626eb8244c8f
+    graders:
+      - type: output-matches
+        name: skill-rpi-infrastructure-consent-boundary-specificity
+        config:
+          pattern: '(?i)^\s*A:[ \t]*ask-specific-consent[ \t]*\r?\nB:[ \t]*ask-specific-consent[ \t]*\r?\nC:[ \t]*reconcile-and-renew-consent\s*$'
+  - name: skill-rpi-infrastructure-budget-consumption
+    prompt: |
+      Initial and generic recovery slots are consumed. One infrastructure retry
+      failed and a second was reserved before the session was interrupted. No
+      second result survived. How many infrastructure slots remain, and may a
+      later caller replay the second reservation? Return exactly two lines:
+      Remaining: 0 or 1; Replay: yes or no.
+    environment:
+      skills:
+        - ../../.github/skills/rpi/rpi-plan
+        - ../../.github/skills/rpi/rpi-plan-critique
+    tags:
+      category: behavior-conformance
+      skill: rpi-plan
+      shape: knowledge
+      advisory: "true"
+      prompt_sha256: 4dd123d07d964038c39bce8e7ad7242eb61c5011ae5bdccf48efecc2840e7840
+    graders:
+      - type: output-matches
+        name: skill-rpi-infrastructure-budget-consumption-reservations
+        config:
+          pattern: '(?i)^\s*Remaining:[ \t]*0[ \t]*\r?\nReplay:[ \t]*no\s*$'
+  - name: skill-rpi-infrastructure-history-preservation
+    prompt: |
+      A task has exhausted both infrastructure retry reservations. The operator
+      repairs the transport and opens a fresh session with a revised candidate.
+      Does that reset the allowance? In another task, saved history cannot
+      establish how many retries were reserved. May the count be assumed zero?
+      Return exactly two lines: Reset: yes or no; UnknownCount: zero or reconcile.
+    environment:
+      skills:
+        - ../../.github/skills/rpi/rpi-plan
+    tags:
+      category: behavior-conformance
+      skill: rpi-plan
+      shape: knowledge
+      advisory: "true"
+      prompt_sha256: 86e856aaa1e73782097887e34570290b30578242db3a259cfb138dc37f0b6275
+    graders:
+      - type: output-matches
+        name: skill-rpi-infrastructure-history-preservation-no-reset
+        config:
+          pattern: '(?i)^\s*Reset:[ \t]*no[ \t]*\r?\nUnknownCount:[ \t]*reconcile\s*$'
+  - name: skill-rpi-infrastructure-late-evidence
+    prompt: |
+      An infrastructure retry has specific consent but has not started. An old
+      substantive critique arrives with findings. In a second independent task,
+      late original findings arrive after an authorized human critique has begun.
+      Choose the evidence handling: Pending: reconcile-before-start or use-consent;
+      Started: retain-and-reconcile-both or prefer-human. Return those two lines.
+    environment:
+      skills:
+        - ../../.github/skills/rpi/rpi-plan
+    tags:
+      category: behavior-conformance
+      skill: rpi-plan
+      shape: knowledge
+      advisory: "true"
+      prompt_sha256: 1e57579c17e8237e56c84a740a425eef58668a71b913b6c6281e905722e0aa59
+    graders:
+      - type: output-matches
+        name: skill-rpi-infrastructure-late-evidence-reconciliation
+        config:
+          pattern: '(?i)^\s*Pending:[ \t]*reconcile-before-start[ \t]*\r?\nStarted:[ \t]*retain-and-reconcile-both\s*$'
+  - name: skill-rpi-infrastructure-human-admission
+    prompt: |
+      Each task has exhausted automated critique reservations. A has a final run
+      still active. B has unknown final-run status. C has a substantive terminal
+      critique. D has all runs confirmed ended, reconciled infrastructure-only
+      failures with no assessment or unresolved fragments and a verified saved
+      candidate. E had human-assessment consent, then new assessment evidence
+      arrived before human work started. Return five lines A through E using:
+      wait, dispose-existing, ask-human-consent, or reconcile-before-start.
+    environment:
+      skills:
+        - ../../.github/skills/rpi/rpi-plan
+    tags:
+      category: behavior-conformance
+      skill: rpi-plan
+      shape: knowledge
+      advisory: "true"
+      prompt_sha256: 1fa28e3df2666ebde766094dbbd18dd8abeae9ae9e7ef9c70849f1cd29804dfb
+    graders:
+      - type: output-matches
+        name: skill-rpi-infrastructure-human-admission-outcome-gates
+        config:
+          pattern: '(?i)^\s*A:[ \t]*wait[ \t]*\r?\nB:[ \t]*wait[ \t]*\r?\nC:[ \t]*dispose-existing[ \t]*\r?\nD:[ \t]*ask-human-consent[ \t]*\r?\nE:[ \t]*reconcile-before-start\s*$'
+  - name: skill-rpi-infrastructure-human-evidence
+    prompt: |
+      Human critique was eligible and specifically authorized after verified
+      infrastructure exhaustion. A supplies approval only. B supplies a full
+      report for a different candidate hash. C supplies an independently
+      human-authored, provenance-verified Complete assessment of the exact saved
+      candidate with full coverage, reconciled prior evidence, resolved blocking
+      findings and explicit residual-risk dispositions. No other gates are open.
+      Return three lines A through C, each Readiness value blocked or ready,
+      formatted as A: blocked, with the appropriate value for each case.
+    environment:
+      skills:
+        - ../../.github/skills/rpi/rpi-plan
+        - ../../.github/skills/rpi/rpi-implement
+    tags:
+      category: behavior-conformance
+      skill: rpi-plan
+      shape: knowledge
+      advisory: "true"
+      prompt_sha256: ede5ac203171c1d1ffeeae3ecfa72f4fe4d0737f6ef4907c17d4f206aca5f885
+    graders:
+      - type: output-matches
+        name: skill-rpi-infrastructure-human-evidence-complete-report
+        config:
+          pattern: '(?i)^\s*A:[ \t]*blocked[ \t]*\r?\nB:[ \t]*blocked[ \t]*\r?\nC:[ \t]*ready\s*$'
+  - name: skill-rpi-infrastructure-implementation-gate
+    prompt: |
+      A user invokes standalone rpi-implement with an approved plan. A has only
+      ended infrastructure failures and no assessment. B has a substantive
+      Partial assessment. C has a verified Complete critique and closed blocking
+      findings, with explicit residual-risk dispositions and no other open gate.
+      Return three lines A through C, each with action stop or implement.
+    environment:
+      skills:
+        - ../../.github/skills/rpi/rpi-implement
+    tags:
+      category: behavior-conformance
+      skill: rpi-implement
+      shape: knowledge
+      advisory: "true"
+      prompt_sha256: bc674e7fba8a49751c110097c5c03088497dc7c21cee8ab6bbe88403637203f6
+    graders:
+      - type: output-matches
+        name: skill-rpi-infrastructure-implementation-gate-complete-only
+        config:
+          pattern: '(?i)^\s*A:[ \t]*stop[ \t]*\r?\nB:[ \t]*stop[ \t]*\r?\nC:[ \t]*implement\s*$'
+  - name: skill-rpi-infrastructure-legacy-classification
+    prompt: |
+      Older attempt records say Blocked. A has trusted originating host records
+      proving the label was a transport-failure wrapper, the run ended and no
+      assessment was produced; all evidence reconciles. B has only a missing file.
+      C has substantive critique findings despite a transport warning. Choose
+      whether infrastructure-only classification is supported: return exactly
+      three lines A through C with supported or unsupported. Preserve old records.
+    environment:
+      skills:
+        - ../../.github/skills/rpi/rpi-plan
+    tags:
+      category: behavior-conformance
+      skill: rpi-plan
+      shape: knowledge
+      advisory: "true"
+      prompt_sha256: 6eb09dfc0109ad061904a1e00e9811bfdcb8b79b9b2ecbd82924ffd16e22f390
+    graders:
+      - type: output-matches
+        name: skill-rpi-infrastructure-legacy-classification-positive-proof
+        config:
+          pattern: '(?i)^\s*A:[ \t]*supported[ \t]*\r?\nB:[ \t]*unsupported[ \t]*\r?\nC:[ \t]*unsupported\s*$'
+  - name: skill-rpi-infrastructure-exhaustion-handoff
+    prompt: |
+      Verified infrastructure-only failures exhausted both additional retries.
+      All runs ended and no assessment exists. Choose the required handoff for
+      each field: Diagnostics: sanitized-attempt-evidence or raw-sensitive-traces;
+      Owner: host-network-support or none; Assessment: independent-human-report
+      or agent-authored-human-signoff; AutomatedCalls: stopped or reset-after-repair.
+      Return exactly those four labeled lines with the chosen values.
+    environment:
+      skills:
+        - ../../.github/skills/rpi/rpi-plan
+    tags:
+      category: behavior-conformance
+      skill: rpi-plan
+      shape: knowledge
+      advisory: "true"
+      prompt_sha256: e614dcbb5b6a29295b7d75e9d6f4fc1f0b0b74a5b2a133f06eb08996056bfd6d
+    graders:
+      - type: output-matches
+        name: skill-rpi-infrastructure-exhaustion-handoff-actionable
+        config:
+          pattern: '(?i)^\s*Diagnostics:[ \t]*sanitized-attempt-evidence[ \t]*\r?\nOwner:[ \t]*host-network-support[ \t]*\r?\nAssessment:[ \t]*independent-human-report[ \t]*\r?\nAutomatedCalls:[ \t]*stopped\s*$'

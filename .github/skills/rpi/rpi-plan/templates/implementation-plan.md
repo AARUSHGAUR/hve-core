@@ -191,10 +191,14 @@ Record the latest critique findings, their disposition, and any explicitly accep
 * Critique execution: {{not_run_started_complete_partial_or_blocked}}
 * Initial attempt consumed: {{yes_or_no}}
 * Recovery attempt consumed: {{yes_or_no}}
+* Infrastructure retry reservations: {{zero_one_or_two_with_preserved_attempt_pointers}}
+* Invocation outcome and assessment availability: {{separate_host_outcome_and_actual_assessment_execution_or_unknown_or_not_produced}}
 * Attempt provenance: {{task_attempt_id_kind_candidate_saved_hash_boundary_depth_output_and_current_run_evidence}}
 * Recovery eligibility and consent: {{not_applicable_or_evidence_checks_original_run_inactivity_candidate_reconciliation_and_explicit_task_specific_user_approval}}
+* Infrastructure classification and reconciliation: {{not_applicable_or_positive_failure_evidence_all_runs_ended_evidence_searched_fragments_late_results_and_uncertainty}}
+* Exhaustion and human assessment: {{not_applicable_or_diagnostic_owner_clearing_evidence_separate_human_eligibility_consent_provenance_and_coverage}}
 
-<!-- Preserve the original attempt and any recovery as separate records here. Mirror their pointers in the parent's single Planning critique execution entry when present. A current initial or recovery critique run may consume its own just-authorized reservation; a later run cannot replay it. Follow the planning reference's Interrupted critique recovery contract. -->
+<!-- Preserve every attempt and append reconciliation without erasing observations. Mirror pointers and budget use in the parent's single Planning critique execution entry. Follow the planning reference's recovery and human-assessment contracts; exhausted counts and missing evidence never satisfy readiness or authorize reassessment. -->
 
 | Critique run and finding | Disposition                                        | Action owner                   | Exact resolving evidence                | Decision route                                     | Plan response or residual risk |
 |--------------------------|----------------------------------------------------|--------------------------------|-----------------------------------------|----------------------------------------------------|--------------------------------|
@@ -213,7 +217,8 @@ Record the latest critique findings, their disposition, and any explicitly accep
 * [ ] Before reflects the evidence-backed pre-change baseline; After reflects the intended result of all phases. Corresponding elements and phase diagrams reuse stable node IDs, with added and removed work distinguishable without color.
 * [ ] Every emitted initialization object has the prescribed string values for themeVariables.fontFamily and themeVariables.fontSize. All diagrams use theme-aware styling, with explicit text colors on custom fills. Dual-theme rendering evidence or its preview limitation is recorded.
 * [ ] Risks, open questions, blockers, critique findings, and accepted residual risks have owners and next actions.
-* [ ] Critique depth, attempt provenance and current-run ownership are recorded; any single recovery follows the explicit interruption protocol, terminal results were not retried, and all findings are disposed without a closure critique.
+* [ ] Depth, every attempt, candidate hash, outcome, consent and current-run ownership are preserved; additional attempts follow the bounded recovery contracts, substantive terminal assessments were not retried, and findings are disposed without a closure critique.
+* [ ] Readiness rests on a Complete actual assessment, not infrastructure-only evidence or approval. Any human commissioning passed separate eligibility checks and its independent authorship, candidate binding and coverage are verified.
 * [ ] Planning execution, readiness, continuation owner, gates, next action, and implementation paths are complete and consistent.
 * [ ] Follow-Up Items remain outside active plan completion and acceptance claims.
 * Checked sections: {{list_of_checked_sections}}
