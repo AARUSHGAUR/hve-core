@@ -13,15 +13,15 @@ Must follow all instructions provided by #file:../../instructions/hve-core/commi
 Protocol:
 
 1. **Inventory candidate paths**: Before changing the index, run `git status --porcelain=v1 -z --untracked-files=all` and `git rev-parse --verify HEAD` in the target repository.
-  * Record tracked, untracked, deleted, renamed, and initially staged paths. Treat a reported rename's old and new paths as one logical selection.
+  * Record tracked, untracked, deleted, renamed, copied, and initially staged paths. Treat only an `R` or `C` status record that supplies both old and new paths as one logical selection. Present a separate deletion and untracked addition as independent candidates without inferring a rename.
   * If `HEAD` cannot be verified, STOP because this workflow cannot restore a rejected staging change safely.
   * If any path has both staged and unstaged changes, STOP and ask the user to resolve its hunk-level intent outside this workflow. Do not restage a partially staged path.
   * If there are no candidate changes, output `No changes to commit.` and STOP.
 2. **Confirm whole-path intent**: Present the candidate paths and their states without file contents, then ask the user to select the whole paths intended for this commit.
   * Every initially staged path must be selected. If the user excludes one, STOP before changing the index; never unstage prior user work.
-  * A detected rename is selected only as its complete old-and-new path pair.
+  * A status-reported rename or copy is selected only as its complete old-and-new path pair.
   * If the selection is empty, ambiguous, unsafe to represent as shell arguments, or absent, STOP without staging or committing.
-3. **Stage only the selection**: Stage only selected paths with `git add -- <safely quoted selected paths>`. Never use an unscoped `git add -A` or `git add -u` path.
+3. **Stage only the selection**: Stage only selected paths with `git --literal-pathspecs add -- <safely quoted selected paths>`. Never use an unscoped `git add -A` or `git add -u` path.
   * Quote each path for the active shell and keep `--` before path arguments. If a path cannot be represented safely, STOP.
   * Record only the selected paths that were not initially staged as this invocation's staging delta.
   * If staging fails, report a concise error and STOP without retrying.
@@ -40,13 +40,13 @@ Protocol:
 
 Staging-delta restoration:
 
-* Restore only paths newly staged by this invocation with `git reset -- <safely quoted staging-delta paths>`. This resets their index entries to `HEAD` while preserving working-tree content and leaves initially staged paths unchanged.
-* Treat both paths of a selected rename as one restoration unit.
+* Restore only paths newly staged by this invocation with `git --literal-pathspecs reset -- <safely quoted staging-delta paths>`. This resets their index entries to `HEAD` while preserving working-tree content and leaves initially staged paths unchanged.
+* Treat both paths of a selected status-reported rename or copy as one restoration unit.
 * If restoration fails, report the affected path names and STOP. Do not retry or run another recovery command.
 
 Rules & Constraints:
 
-* Allowed Git commands during the normal flow: `git status --porcelain=v1 -z --untracked-files=all`, `git rev-parse --verify HEAD`, path-scoped `git add -- <paths>`, path-scoped `git reset -- <paths>` only for staging-delta restoration, and `git commit -F -` or single-line `git commit -m` variants. The optional adjustment flow may also use `git reset --soft HEAD^` as defined below.
+* Allowed Git commands during the normal flow: `git status --porcelain=v1 -z --untracked-files=all`, `git rev-parse --verify HEAD`, path-scoped `git --literal-pathspecs add -- <paths>`, path-scoped `git --literal-pathspecs reset -- <paths>` only for staging-delta restoration, and `git commit -F -` or single-line `git commit -m` variants. The optional adjustment flow may also use `git reset --soft HEAD^` as defined below.
 * Never use root `.gitignore` presence, absence, length, or completeness as staging authorization.
 * Never use Git CLI to obtain file contents or diffs. Use `git status` only for path and index-state metadata, and rely on `get_changed_files` for staged content.
 * Never add a pre-commit hook, require a secret-scanner dependency, or claim that this workflow performs deterministic secret detection. Repository-owned scanning remains a separate downstream control.
