@@ -165,7 +165,7 @@ function Test-EvalEnvironment {
                 continue
             }
             try {
-                $resolved = [System.IO.Path]::GetFullPath((Join-Path -Path $SpecDirectory -ChildPath $pathString -ErrorAction Stop))
+                $resolved = [System.IO.Path]::GetFullPath($pathString, $SpecDirectory)
                 if (-not (Test-Path -LiteralPath $resolved -ErrorAction Stop)) {
                     $errors.Add(@{ path = $SpecPath; field = $entryField; message = "$field.$entryKey path '$pathString' does not resolve to an existing path (resolved to '$resolved'); vally resolves it relative to the spec directory" })
                 }

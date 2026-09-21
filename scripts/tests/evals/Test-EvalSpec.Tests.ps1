@@ -201,6 +201,48 @@ Describe 'Test-EvalSpecCompliance (module)' -Tag 'Unit' {
             $errors | Should -HaveCount 0
         }
 
+        It 'Accepts absolute skill and file sources alongside relative paths without mutating the spec' {
+            $skillPath = (Get-Item -LiteralPath (Join-Path $TestDrive 'suite/assets/skill')).FullName
+            $filePath = (Get-Item -LiteralPath (Join-Path $TestDrive 'suite/assets/input.md')).FullName
+            $script:EnvironmentOwner[$Key] = @{
+                skills = @($skillPath, 'assets/skill')
+                files = @($filePath, @{ src = $filePath; dest = 'remapped/input.md' }, 'assets/input.md')
+            }
+            $before = $script:EnvironmentSpec | ConvertTo-Json -Depth 10
+
+            $errors = @(Test-EvalSpecCompliance -Spec $script:EnvironmentSpec -SpecPath $script:EnvironmentSpecPath -RepoRoot $TestDrive)
+
+            $errors | Should -HaveCount 0
+            ($script:EnvironmentSpec | ConvertTo-Json -Depth 10) | Should -BeExactly $before
+        }
+
+        It 'Reports missing absolute sources with indexed fields and their actual resolved paths' {
+            $absoluteRoot = (Get-Item -LiteralPath $TestDrive).FullName
+            $skillPath = Join-Path $absoluteRoot 'missing-skill'
+            $filePath = Join-Path $absoluteRoot 'missing-file'
+            $mappedFilePath = Join-Path $absoluteRoot 'missing-mapped-file'
+            $script:EnvironmentOwner[$Key] = @{
+                skills = @($skillPath)
+                files = @($filePath, @{ src = $mappedFilePath; dest = 'output.md' })
+            }
+            $expectedFields = @(
+                "$script:EnvironmentField.skills[0]"
+                "$script:EnvironmentField.files[0]"
+                "$script:EnvironmentField.files[1]"
+            )
+            $expectedPaths = @($skillPath, $filePath, $mappedFilePath)
+
+            $errors = @(Test-EvalSpecCompliance -Spec $script:EnvironmentSpec -SpecPath $script:EnvironmentSpecPath -RepoRoot $TestDrive)
+
+            $errors | Should -HaveCount 3
+            for ($index = 0; $index -lt $expectedPaths.Count; $index++) {
+                $expectedPath = $expectedPaths[$index]
+                $errors[$index].path | Should -BeExactly $script:EnvironmentSpecPath
+                $errors[$index].field | Should -BeExactly $expectedFields[$index]
+                $errors[$index].message | Should -Match ([regex]::Escape("path '$expectedPath' does not resolve to an existing path (resolved to '$expectedPath')"))
+            }
+        }
+
         It 'Reports all unresolved sources with their indexed fields' {
             $script:EnvironmentOwner[$Key] = @{
                 skills = @('missing-skill')
