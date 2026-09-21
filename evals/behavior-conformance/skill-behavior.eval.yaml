@@ -5969,7 +5969,7 @@ stimuli:
       prompt_sha256: 6eb09dfc0109ad061904a1e00e9811bfdcb8b79b9b2ecbd82924ffd16e22f390
     graders:
       - type: output-matches
-        name: skill-rpi-infrastructure-legacy-classification-positive-proof
+        name: skill-rpi-infrastructure-legacy-classification-proof
         config:
           pattern: '(?i)^\s*A:[ \t]*supported[ \t]*\r?\nB:[ \t]*unsupported[ \t]*\r?\nC:[ \t]*unsupported\s*$'
   - name: skill-rpi-infrastructure-exhaustion-handoff
