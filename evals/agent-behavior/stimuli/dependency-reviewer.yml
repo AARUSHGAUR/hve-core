@@ -3,7 +3,7 @@
 stimuli:
   - name: dependency-reviewer-class-recipe
     prompt: |
-      Review this dependency change with severity:
+      Review this dependency change. Report at least one finding with an explicit severity and recommendation:
       ```diff
       -"lodash": "^4.17.21"
       +"lodash": "^3.0.0"

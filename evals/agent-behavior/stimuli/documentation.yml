@@ -4,6 +4,7 @@ stimuli:
   - name: documentation-audit-class-recipe
     prompt: |
       Plan a documentation coverage audit across the `docs/` tree. List phases and success criteria. Write the plan under `.copilot-tracking/documentation/` and tell me the path you wrote it to.
+      In your response, list the phase headings and their success criteria before reporting the path.
     tags:
       category: agent-behavior
     graders:

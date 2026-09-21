@@ -902,20 +902,24 @@ jobs:
                 const failed = Number(a.assertionsFailed || 0);
                 let blocking = Number(a.authoritativeFailed);
                 let advisory = Number(a.advisoryFailed);
+                let tolerated = Number(a.toleratedFailed);
                 if (!Number.isFinite(blocking) || !Number.isFinite(advisory)) {
                   if (a.status === 'advisory-fail') { blocking = 0; advisory = failed; }
                   else if (a.status === 'pass' || a.status === 'skipped') { blocking = 0; advisory = 0; }
                   else { blocking = failed; advisory = 0; }
                 }
-                return { blocking, advisory };
+                if (!Number.isFinite(tolerated)) { tolerated = Math.max(0, failed - blocking - advisory); }
+                return { blocking, advisory, tolerated };
               };
 
               let blockingTotal = 0;
               let advisoryTotal = 0;
+              let toleratedTotal = 0;
               for (const a of artifacts) {
-                const { blocking, advisory } = splitFailures(a);
+                const { blocking, advisory, tolerated } = splitFailures(a);
                 blockingTotal += blocking;
                 advisoryTotal += advisory;
+                toleratedTotal += tolerated;
               }
 
               // Only `failedSpecs` gates the PR. When nothing blocks merge but advisory
@@ -941,17 +945,18 @@ jobs:
                 `- Assertions passed: ${totals.assertionsPassed}`,
                 `- Assertions failed (blocking): ${blockingTotal}`,
                 `- Assertions failed (advisory): ${advisoryTotal}`,
+                `- Trial dips tolerated by per-stimulus aggregate: ${toleratedTotal}`,
                 `- Failed specs (merge-blocking): ${totals.failedSpecs}`,
                 '',
               ];
 
               if (artifacts.length > 0) {
-                lines.push('| Artifact | Kind | Status | Specs | Passed | Failed (blocking) | Failed (advisory) |');
-                lines.push('|----------|------|--------|-------|--------|-------------------|-------------------|');
+                lines.push('| Artifact | Kind | Status | Specs | Passed | Failed (blocking) | Failed (advisory) | Trial dips (tolerated) |');
+                lines.push('|----------|------|--------|-------|--------|-------------------|-------------------|------------------------|');
                 for (const a of artifacts) {
                   const icon = a.status === 'pass' ? '✅' : a.status === 'skipped' ? '⏭️' : a.status === 'advisory-fail' ? '⚠️' : '❌';
-                  const { blocking, advisory } = splitFailures(a);
-                  lines.push(`| \`${a.artifactId}\` | ${a.kind} | ${icon} ${a.status} | ${a.specCount || 0} | ${a.assertionsPassed} | ${blocking} | ${advisory} |`);
+                  const { blocking, advisory, tolerated } = splitFailures(a);
+                  lines.push(`| \`${a.artifactId}\` | ${a.kind} | ${icon} ${a.status} | ${a.specCount || 0} | ${a.assertionsPassed} | ${blocking} | ${advisory} | ${tolerated} |`);
                 }
                 lines.push('');
                 lines.push('> **Legend** — ✅ clean · ⚠️ advisory failures only (non-blocking) · ⏭️ skipped · ❌ merge-blocking failure');

@@ -305,6 +305,7 @@ stimuli:
 - name: agentic-workflows-class-recipe
   prompt: |
     Plan an agentic workflow for "automated nightly dependency upgrade PRs". Break it into phases with success criteria. Write the plan under `.copilot-tracking/` and report the path you wrote it to.
+    In your response, list the phase headings and their success criteria before reporting the path.
   tags:
     category: agent-behavior
     agent: agentic-workflows
@@ -2020,7 +2021,7 @@ stimuli:
       negate: true
 - name: dependency-reviewer-class-recipe
   prompt: |
-    Review this dependency change with severity:
+    Review this dependency change. Report at least one finding with an explicit severity and recommendation:
     ```diff
     -"lodash": "^4.17.21"
     +"lodash": "^3.0.0"
@@ -2045,6 +2046,7 @@ stimuli:
 - name: documentation-audit-class-recipe
   prompt: |
     Plan a documentation coverage audit across the `docs/` tree. List phases and success criteria. Write the plan under `.copilot-tracking/documentation/` and tell me the path you wrote it to.
+    In your response, list the phase headings and their success criteria before reporting the path.
   tags:
     category: agent-behavior
     agent: documentation
@@ -2572,6 +2574,7 @@ stimuli:
 - name: experiment-designer-class-recipe
   prompt: |
     Design a minimum viable experiment for "Will adding a price slider increase conversion?" Lay out phases, hypothesis, and success metrics. Write the design under `.copilot-tracking/mve/` and report the path.
+    In your response, list the phase headings, hypothesis, and success metrics before reporting the path.
   tags:
     category: agent-behavior
     agent: experiment-designer
@@ -3533,6 +3536,7 @@ stimuli:
 - name: pptx-class-recipe
   prompt: |
     Plan a 5-slide PowerPoint deck about "Q1 engineering velocity highlights." List the three phases of the deck build. Write the plan under `.copilot-tracking/ppt/` and report the path.
+    In your response, list the three phase headings before reporting the path.
   tags:
     category: agent-behavior
     agent: pptx

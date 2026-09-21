@@ -94,6 +94,42 @@ Describe 'VallyRunner module' -Tag 'Unit' {
             $result.assertionsFailed | Should -Be 0
         }
 
+        It 'Passes a stimulus whose mean trial score meets the threshold despite one dip' {
+            $runDir = Join-Path $script:WorkRoot 'run-aggregate-pass'
+            New-Item -ItemType Directory -Path $runDir -Force | Out-Null
+            $records = foreach ($score in @(1.0, 1.0, 1.0, 1.0, 0.0)) {
+                @{
+                    trajectory = @{ stimulus = @{ name = 'aggregate-stimulus' }; metrics = @{ wallTimeMs = 1 } }
+                    gradeResult = @{ passed = ($score -ge 0.7); score = $score; details = @() }
+                } | ConvertTo-Json -Depth 6 -Compress
+            }
+            Set-Content -LiteralPath (Join-Path $runDir 'results.jsonl') -Value $records -Encoding utf8
+
+            $result = Read-VallyResultsJsonl -RunDir $runDir -Threshold 0.7
+            $result.perStimulus['aggregate-stimulus'].aggregateScore | Should -Be 0.8
+            $result.perStimulus['aggregate-stimulus'].aggregatePassed | Should -BeTrue
+            $result.stimuliPassed | Should -Be 1
+            $result.stimuliFailed | Should -Be 0
+            $result.assertionsFailed | Should -Be 1
+        }
+
+        It 'Fails a stimulus whose mean trial score remains below the threshold' {
+            $runDir = Join-Path $script:WorkRoot 'run-aggregate-fail'
+            New-Item -ItemType Directory -Path $runDir -Force | Out-Null
+            $records = foreach ($score in @(0.6666666667, 0.6666666667, 0.6666666667, 0.6666666667, 0.6666666667)) {
+                @{
+                    trajectory = @{ stimulus = @{ name = 'aggregate-stimulus' }; metrics = @{ wallTimeMs = 1 } }
+                    gradeResult = @{ passed = $false; score = $score; details = @() }
+                } | ConvertTo-Json -Depth 6 -Compress
+            }
+            Set-Content -LiteralPath (Join-Path $runDir 'results.jsonl') -Value $records -Encoding utf8
+
+            $result = Read-VallyResultsJsonl -RunDir $runDir -Threshold 0.7
+            $result.perStimulus['aggregate-stimulus'].aggregatePassed | Should -BeFalse
+            $result.stimuliPassed | Should -Be 0
+            $result.stimuliFailed | Should -Be 1
+        }
+
         It 'Treats a record without gradeResult as an errored trial (not failed)' {
             $runDir = Join-Path $script:WorkRoot 'run-missing-grade'
             New-Item -ItemType Directory -Path $runDir -Force | Out-Null
@@ -121,7 +157,7 @@ Describe 'VallyRunner module' -Tag 'Unit' {
                     passed = $false
                     score = 0.4
                     details = @(
-                        @{ name = 'output-matches'; configuredName = 'required-marker'; graderType = 'output-matches'; passed = $false; score = 0; evidence = 'raw evidence' }
+                        @{ name = 'output-matches'; configuredName = 'required-marker'; kind = 'output-matches'; passed = $false; score = 0; evidence = 'raw evidence' }
                         @{ name = 'tool-calls'; configuredName = 'write-observed'; graderType = 'tool-calls'; passed = $true; score = 1; evidence = 'raw evidence' }
                     )
                 }

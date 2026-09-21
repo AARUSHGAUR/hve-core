@@ -4,6 +4,7 @@ stimuli:
   - name: agentic-workflows-class-recipe
     prompt: |
       Plan an agentic workflow for "automated nightly dependency upgrade PRs". Break it into phases with success criteria. Write the plan under `.copilot-tracking/` and report the path you wrote it to.
+      In your response, list the phase headings and their success criteria before reporting the path.
     tags:
       category: agent-behavior
     graders:

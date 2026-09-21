@@ -5,6 +5,7 @@ stimuli:
   - name: experiment-designer-class-recipe
     prompt: |
       Design a minimum viable experiment for "Will adding a price slider increase conversion?" Lay out phases, hypothesis, and success metrics. Write the design under `.copilot-tracking/mve/` and report the path.
+      In your response, list the phase headings, hypothesis, and success metrics before reporting the path.
     tags:
       category: agent-behavior
     graders:

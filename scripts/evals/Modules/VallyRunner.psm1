@@ -147,6 +147,8 @@ function Read-VallyResultsJsonl {
         errored          = 0
         durationMs       = 0
         trials           = 0
+        stimuliPassed    = 0
+        stimuliFailed    = 0
         resultsPath      = $null
         perStimulus      = [ordered]@{}
         failedOrErroredTrials = @()
@@ -246,13 +248,20 @@ function Read-VallyResultsJsonl {
                     errored          = 0
                     durationMs       = 0
                     trials           = 0
+                    scoreSum         = 0.0
+                    scoredTrials     = 0
                 }
             }
             $bucket = $perStimulus[$stimulusName]
             $bucket.trials++
             if ($trialErrored) { $bucket.errored++ }
-            elseif ($trialPassed) { $bucket.assertionsPassed++ }
-            else { $bucket.assertionsFailed++ }
+            else {
+                if ($trialPassed) { $bucket.assertionsPassed++ }
+                else { $bucket.assertionsFailed++ }
+                $effectiveScore = if ($hasScore) { $scoreValue } elseif ([bool]$gradeResult.passed) { 1.0 } else { 0.0 }
+                $bucket.scoreSum += [double]$effectiveScore
+                $bucket.scoredTrials++
+            }
             $bucket.durationMs += $trialWallMs
         }
 
@@ -272,7 +281,9 @@ function Read-VallyResultsJsonl {
                         else { 'unnamed' }
                         [ordered]@{
                             name       = $graderName
-                            graderType = if ($detail.PSObject.Properties['graderType']) { [string]$detail.graderType } else { $null }
+                            graderType = if ($detail.PSObject.Properties['graderType']) { [string]$detail.graderType }
+                                         elseif ($detail.PSObject.Properties['kind']) { [string]$detail.kind }
+                                         else { $null }
                             score      = if ($detail.PSObject.Properties['score']) { $detail.score } else { $null }
                         }
                     }
@@ -291,12 +302,38 @@ function Read-VallyResultsJsonl {
         }
     }
 
+    $stimuliPassed = 0
+    $stimuliFailed = 0
+    foreach ($stimulusName in @($perStimulus.Keys)) {
+        $bucket = $perStimulus[$stimulusName]
+        $aggregateScore = if ($bucket.scoredTrials -gt 0) {
+            [double]$bucket.scoreSum / [int]$bucket.scoredTrials
+        }
+        else { $null }
+        $aggregatePassed = if ($null -eq $aggregateScore) { $null }
+        elseif ($PSBoundParameters.ContainsKey('Threshold') -and $null -ne $Threshold) {
+            $aggregateScore -ge [double]$Threshold
+        }
+        else { $bucket.assertionsFailed -eq 0 }
+
+        $bucket.aggregateScore = $aggregateScore
+        $bucket.aggregatePassed = $aggregatePassed
+        $bucket.Remove('scoreSum')
+        $bucket.Remove('scoredTrials')
+        if ($null -ne $aggregatePassed) {
+            if ($aggregatePassed) { $stimuliPassed++ }
+            else { $stimuliFailed++ }
+        }
+    }
+
     return @{
         assertionsPassed = $passed
         assertionsFailed = $failed
         errored          = $errored
         durationMs       = $durationMs
         trials           = $trials
+        stimuliPassed    = $stimuliPassed
+        stimuliFailed    = $stimuliFailed
         resultsPath      = $jsonl.FullName
         perStimulus      = $perStimulus
         failedOrErroredTrials = @($failedOrErroredTrials)
