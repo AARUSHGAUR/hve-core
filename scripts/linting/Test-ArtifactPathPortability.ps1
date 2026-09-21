@@ -134,6 +134,7 @@ function Get-ArtifactPathPortabilityMaskedLines {
     $inFrontmatter = $lines.Count -gt 0 -and $lines[0].Trim() -eq '---'
     $frontmatterClosed = -not $inFrontmatter
     $inFence = $false
+    $scanFence = $false
     $masked = for ($index = 0; $index -lt $lines.Count; $index++) {
         $line = $lines[$index]
         if (-not $frontmatterClosed) {
@@ -144,13 +145,20 @@ function Get-ArtifactPathPortabilityMaskedLines {
             continue
         }
 
-        if ($line -match '^\s*(```|~~~)') {
-            $inFence = -not $inFence
+        if ($line -match '^\s*(?:```|~~~)\s*(?<Info>.*)$') {
+            if ($inFence) {
+                $inFence = $false
+                $scanFence = $false
+            }
+            else {
+                $inFence = $true
+                $scanFence = $Matches.Info.Trim() -match '^(?:bash|sh|shell|console|powershell|pwsh)(?:\s|$)'
+            }
             ''
             continue
         }
 
-        if ($inFence) {
+        if ($inFence -and -not $scanFence) {
             ''
             continue
         }
@@ -266,9 +274,10 @@ function Test-ArtifactPathPortability {
         $lines = @(Get-ArtifactPathPortabilityMaskedLines -Content $content)
         for ($lineIndex = 0; $lineIndex -lt $lines.Count; $lineIndex++) {
             $line = $lines[$lineIndex]
-            foreach ($match in [regex]::Matches($line, '(?<![\w/.-])\.github/')) {
-                $reference = Get-ArtifactPathReference -Line $line -Index $match.Index
-                if (Test-ArtifactPathReferenceAllowed -RelativePath $relativePath -Line $line -Index $match.Index -Reference $reference) {
+            foreach ($match in [regex]::Matches($line, '(?<![\w/.-])(?:\./)?(?<Root>\.github/)')) {
+                $referenceIndex = $match.Groups['Root'].Index
+                $reference = Get-ArtifactPathReference -Line $line -Index $referenceIndex
+                if (Test-ArtifactPathReferenceAllowed -RelativePath $relativePath -Line $line -Index $referenceIndex -Reference $reference) {
                     continue
                 }
 

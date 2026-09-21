@@ -41,7 +41,7 @@ Describe 'Test-ArtifactPathPortability classification' -Tag 'Unit' {
         $result.Findings[0].Reason | Should -Not -BeNullOrEmpty
     }
 
-    It 'Ignores sanctioned syntax and masked regions' {
+    It 'Ignores sanctioned syntax and demonstrably descriptive masked regions' {
         $repo = Join-Path $TestDrive 'sanctioned'
         $content = @'
 ---
@@ -65,6 +65,37 @@ Use `.github/skills/{package}/{skill}/references/file.md`.
 
         $result.Passed | Should -BeTrue
         $result.Findings | Should -HaveCount 0
+    }
+
+    It 'Reports commands in operational shell fences' -ForEach @(
+        @{ Fence = 'bash'; Command = 'python .github/skills/example/scripts/run.py'; Reference = '.github/skills/example/scripts/run.py' }
+        @{ Fence = 'sh'; Command = 'cd .github/skills/example'; Reference = '.github/skills/example' }
+        @{ Fence = 'shell'; Command = 'uv run --project .github/skills/example pytest'; Reference = '.github/skills/example' }
+        @{ Fence = 'powershell'; Command = './.github/skills/example/scripts/Invoke-Example.ps1'; Reference = './.github/skills/example/scripts/Invoke-Example.ps1' }
+        @{ Fence = 'pwsh title="Example"'; Command = './.github/skills/example/scripts/Invoke-Example.ps1'; Reference = './.github/skills/example/scripts/Invoke-Example.ps1' }
+        @{ Fence = 'console'; Command = 'python .github/skills/example/scripts/run.py'; Reference = '.github/skills/example/scripts/run.py' }
+    ) {
+        $repo = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
+        $content = "``````$Fence`n$Command`n``````"
+        New-PortableArtifactFixture -RepoRoot $repo -RelativePath '.github/agents/example/fixture.agent.md' -Content $content
+
+        $result = Test-ArtifactPathPortability -RepoRoot $repo
+
+        $result.Passed | Should -BeFalse
+        $result.Findings | Should -HaveCount 1
+        $result.Findings[0].Line | Should -Be 2
+        $result.Findings[0].Reference | Should -Be $Reference
+    }
+
+    It 'Reports an optional dot-slash prefix outside a fence' {
+        $repo = Join-Path $TestDrive 'dot-slash'
+        New-PortableArtifactFixture -RepoRoot $repo -RelativePath '.github/agents/example/fixture.agent.md' -Content 'Run ./.github/skills/example/scripts/Invoke-Example.ps1.'
+
+        $result = Test-ArtifactPathPortability -RepoRoot $repo
+
+        $result.Passed | Should -BeFalse
+        $result.Findings | Should -HaveCount 1
+        $result.Findings[0].Reference | Should -Be './.github/skills/example/scripts/Invoke-Example.ps1'
     }
 
     It 'Allows only the exact persisted provenance literal in its approved files' {

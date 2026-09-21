@@ -82,7 +82,7 @@ Run the two-command flow using the confirmed parameters from Step 2.5:
 1. Generate slide YAML:
 
 ```bash
-python .github/skills/experimental/customer-card-render/scripts/generate_cards.py \
+python "<customer-card-render-skill-root>/scripts/generate_cards.py" \
   --canonical-dir .copilot-tracking/dt/{project-slug}/canonical \
   --output-dir .copilot-tracking/dt/{project-slug}/render/content
 ```
@@ -90,7 +90,7 @@ python .github/skills/experimental/customer-card-render/scripts/generate_cards.p
 2. Build PPTX using existing PowerPoint pipeline:
 
 ```powershell
-./.github/skills/experimental/powerpoint/scripts/Invoke-PptxPipeline.ps1 -Action Build \
+& "<powerpoint-skill-root>/scripts/Invoke-PptxPipeline.ps1" -Action Build \
   -ContentDir .copilot-tracking/dt/{project-slug}/render/content \
   -StylePath .copilot-tracking/dt/{project-slug}/render/content/global/style.yaml \
   -OutputPath .copilot-tracking/dt/{project-slug}/render/output/customer-cards.pptx
