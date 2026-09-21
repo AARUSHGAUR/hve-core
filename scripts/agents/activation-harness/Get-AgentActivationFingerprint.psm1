@@ -178,13 +178,13 @@ function Resolve-UniqueSkillReference {
         return $null
     }
 
-    $matches = @(Get-ChildItem -LiteralPath $skillsRoot -Recurse -Filter 'SKILL.md' -File |
+    $SkillMatches = @(Get-ChildItem -LiteralPath $skillsRoot -Recurse -Filter 'SKILL.md' -File |
             Where-Object { $_.Directory.Name -eq $SkillName })
-    if ($matches.Count -ne 1) {
+    if ($SkillMatches.Count -ne 1) {
         return $null
     }
 
-    return [System.IO.Path]::GetRelativePath($RepoRoot, $matches[0].FullName).Replace('\', '/')
+    return [System.IO.Path]::GetRelativePath($RepoRoot, $SkillMatches[0].FullName).Replace('\', '/')
 }
 
 <#
@@ -222,12 +222,12 @@ function Resolve-UniqueInstructionReference {
         return $null
     }
 
-    $matches = @(Get-ChildItem -LiteralPath $instructionsRoot -Recurse -Filter $FileName -File)
-    if ($matches.Count -ne 1) {
+    $InstructionMatches = @(Get-ChildItem -LiteralPath $instructionsRoot -Recurse -Filter $FileName -File)
+    if ($InstructionMatches.Count -ne 1) {
         return $null
     }
 
-    return [System.IO.Path]::GetRelativePath($RepoRoot, $matches[0].FullName).Replace('\', '/')
+    return [System.IO.Path]::GetRelativePath($RepoRoot, $InstructionMatches[0].FullName).Replace('\', '/')
 }
 
 <#

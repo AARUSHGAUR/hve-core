@@ -14,7 +14,7 @@ stimuli:
       - type: output-matches
         name: rai-assessor-reference-first
         config:
-          pattern: '(?is)(read|load).{0,100}(rai-standards|reference).{0,160}(before|prior).{0,80}(analy|evaluat)'
+          pattern: '(?is)(read|load).{0,100}(rai-standards|reference).{0,160}(before|prior).{0,80}(analysis|analyse|analyze|evaluat)'
       - type: output-matches
         name: rai-assessor-plan-statuses
         config:
