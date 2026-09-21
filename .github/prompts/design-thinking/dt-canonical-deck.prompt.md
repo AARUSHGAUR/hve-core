@@ -60,7 +60,7 @@ If accepted:
 
 Before executing build commands, verify the actual command parameters by reading the skill documentation:
 
-1. Load `customer-card-render` and check its `README.md` for the exact flags and parameters for `generate_cards.py`
+1. Load `customer-card-render` and check its skill instructions under `generate_cards.py CLI Reference` for the exact flags and parameters for `generate_cards.py`
 2. Load `powerpoint` and check its skill instructions for the exact parameters for `Invoke-PptxPipeline.ps1` (PowerShell) or `invoke-pptx-pipeline.sh` (bash)
 3. Confirm parameter names match the commands shown in Step 3 below. If skill interfaces have changed, update commands accordingly and inform the user of any parameter differences
 
