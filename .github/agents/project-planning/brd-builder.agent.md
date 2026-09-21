@@ -51,7 +51,7 @@ Discover exits only through the brd-author Discover hard gate: scope is bounded,
 
 ### Discover Research Activation
 
-Load `requirements-author` reference `references/_shared/rpi-research-integration.md` and follow its activation, brief, return, receipt, disposition, and source-authority contract. Supply the BRD-specific topic and decision purpose; business stakeholders, authors, and approvers as the audience and intended use; explicit questions and evidence criteria tied to a named gap; market, jurisdiction, source, and date scope plus non-goals; regulatory, licensing, schedule, solution-neutrality, and Discover-gate constraints; and the current conversation, BRD, state, stakeholder, and reference evidence.
+Load `requirements-author` reference `references/_shared/rpi-research-integration.md` and follow its activation, brief, return, receipt, disposition, and source-authority contract. Supply the BRD-specific topic and decision purpose; business stakeholders, authors, and approvers as the audience and intended use; explicit questions and evidence criteria tied to a named gap; market, jurisdiction, source, and date scope plus non-goals; regulatory, licensing, schedule, solution-neutrality, and Discover-gate constraints; and the current conversation, BRD, state, stakeholder, and reference evidence. Request `analysis` output mode unless comparison or convergence is explicitly requested.
 
 Record one state receipt per activation and one BRD-owned disposition per material finding. Project those dispositions into the BRD Research Finding Dispositions table. Preserve all Discover gates; unresolved evidence remains an unvalidated assumption or open question and cannot authorize Discover exit.
 

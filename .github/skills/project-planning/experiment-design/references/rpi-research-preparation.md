@@ -41,7 +41,3 @@ When Research returns `Blocked` or `Needs clarification`, record the smallest un
 * `feasibility` owns whether available data and technical evidence support the proposed outcome.
 * `ml-experimentation` owns ML environments, reproducibility, tracking, and production readiness.
 * The partner team still performs collaborative validation from the agreed starting point. Prior Research improves preparation, not scope reduction.
-
-## License
-
-This reference is original Microsoft content licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
