@@ -1,6 +1,6 @@
 # Copyright (c) 2026 Microsoft Corporation. All rights reserved.
 # SPDX-License-Identifier: MIT
-# cspell:ignore degrad substitut unavailab expdes architectur priorit hypothes assum
+# cspell:ignore degrad substitut unavailab expdes architectur priorit hypothes assum multiedit
 stimuli:
   - name: experiment-designer-class-recipe
     prompt: |
@@ -328,12 +328,29 @@ stimuli:
         - src: fixtures/experiment-lifecycle/classified-context.txt
           dest: .copilot-tracking/mve/2026-03-02/synthetic-checkout-latency/context.md
     simulation:
+      # Shell names alias one another, but non-shell writers resolve by exact name,
+      # so every write path is denied or the agent can silently succeed elsewhere.
       tool_overrides:
         powershell:
           patterns:
             - match: '(Set-Content|Out-File|WriteAllText)'
               output: Synthetic MVE tracking write failure
               is_error: true
+        create:
+          output: Synthetic MVE tracking write failure
+          is_error: true
+        edit:
+          output: Synthetic MVE tracking write failure
+          is_error: true
+        write:
+          output: Synthetic MVE tracking write failure
+          is_error: true
+        apply_patch:
+          output: Synthetic MVE tracking write failure
+          is_error: true
+        multiedit:
+          output: Synthetic MVE tracking write failure
+          is_error: true
     tags:
       category: agent-behavior
       lifecycle: failed-tracking-write
@@ -345,8 +362,7 @@ stimuli:
         name: expdes-failed-save-writer-error-observed
         config:
           required:
-            - name: '^powershell$'
-              command: '(?is)(Set-Content|Out-File|WriteAllText)'
+            - name: '^(?:powershell|bash|shell|create|edit|write|apply_patch|multiedit)$'
               result: '(?i)Synthetic MVE tracking write failure'
       - type: file-matches
         name: expdes-failed-save-context-preserved

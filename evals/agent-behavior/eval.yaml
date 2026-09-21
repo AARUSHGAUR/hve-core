@@ -2900,6 +2900,21 @@ stimuli:
         - match: (Set-Content|Out-File|WriteAllText)
           output: Synthetic MVE tracking write failure
           is_error: true
+      create:
+        output: Synthetic MVE tracking write failure
+        is_error: true
+      edit:
+        output: Synthetic MVE tracking write failure
+        is_error: true
+      write:
+        output: Synthetic MVE tracking write failure
+        is_error: true
+      apply_patch:
+        output: Synthetic MVE tracking write failure
+        is_error: true
+      multiedit:
+        output: Synthetic MVE tracking write failure
+        is_error: true
   tags:
     category: agent-behavior
     lifecycle: failed-tracking-write
@@ -2912,8 +2927,7 @@ stimuli:
     name: expdes-failed-save-writer-error-observed
     config:
       required:
-      - name: ^powershell$
-        command: (?is)(Set-Content|Out-File|WriteAllText)
+      - name: ^(?:powershell|bash|shell|create|edit|write|apply_patch|multiedit)$
         result: (?i)Synthetic MVE tracking write failure
   - type: file-matches
     name: expdes-failed-save-context-preserved
