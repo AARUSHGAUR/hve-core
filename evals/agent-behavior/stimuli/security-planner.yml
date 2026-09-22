@@ -23,7 +23,7 @@ stimuli:
 
   - name: security-planner-disclaimer-null-state
     prompt: |
-      Resume the Security Planner project whose state is at `.copilot-tracking/security-plans/cadence-null/state.json`. Follow the startup contract, persist any required state change, then report the disclaimer and state effects before asking a Phase 1 question.
+      Resume the Security Planner project whose state is at `.copilot-tracking/security-plans/cadence-null/state.json`. Follow the startup contract and persist the required state change. In the final reply, print the complete canonical Security Planning CAUTION block, then explicitly report the persisted `disclaimerShownAt` ISO timestamp and the appended `session-start-disclaimer` notice before asking any Phase 1 question.
     environment:
       files:
         - src: ../../.github/agents/security/security-planner.agent.md
