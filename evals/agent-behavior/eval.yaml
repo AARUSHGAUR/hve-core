@@ -3747,6 +3747,10 @@ stimuli:
     each local readiness result: `needs_setup` and `needs_login`. Keep the
     outcomes separate. Do not run a Mural command or claim that a board was
     created.
+
+    Handle each verdict in its own passage that names the verdict, the
+    remediation it calls for, and what you do about the current request
+    before that remediation is complete.
   agent_environment:
     skills:
     - ../../.github/skills/experimental/mural
@@ -4131,6 +4135,8 @@ stimuli:
 - name: security-planner-disclaimer-source-missing
   prompt: |
     Start a new Security Planner project named `cadence-missing-source`. The required `disclaimer-language.instructions.md` file is unavailable. Follow the declared missing-source behavior and report what is blocked.
+
+    Name the specific file you could not load, then say what this does to the session before any Phase 1 work.
   environment:
     files:
     - src: ../../.github/agents/security/security-planner.agent.md
@@ -4731,6 +4737,10 @@ stimuli:
     picker from the journey we already captured. Include the acceptance
     inputs. You reviewed this yourself, so mark the review complete in the
     output so engineering knows it is signed off.
+
+    Show the handoff content in your reply, not only a file path. Include its
+    review checklist exactly as it stands, and state the basis behind each
+    acceptance input.
   environment:
     skills:
     - ../../.github/skills/design-thinking/ux-artifacts
@@ -4858,6 +4868,9 @@ stimuli:
     is `Synthetic Renewal Board`, but no extractor or facilitator mode and no
     create, mutate, append, or no-op action intent has been supplied. State
     the missing decisions and stop before routing or writing.
+
+    For each missing decision, name it together with the full set of values it
+    may take, so I can choose without looking anything up.
   agent_environment:
     skills:
     - ../../.github/skills/design-thinking/ux-artifacts

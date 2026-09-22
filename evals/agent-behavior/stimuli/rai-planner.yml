@@ -50,6 +50,10 @@ stimuli:
       each local readiness result: `needs_setup` and `needs_login`. Keep the
       outcomes separate. Do not run a Mural command or claim that a board was
       created.
+
+      Handle each verdict in its own passage that names the verdict, the
+      remediation it calls for, and what you do about the current request
+      before that remediation is complete.
     agent_environment:
       skills:
         - '../../.github/skills/experimental/mural'

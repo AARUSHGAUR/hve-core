@@ -105,6 +105,8 @@ stimuli:
   - name: security-planner-disclaimer-source-missing
     prompt: |
       Start a new Security Planner project named `cadence-missing-source`. The required `disclaimer-language.instructions.md` file is unavailable. Follow the declared missing-source behavior and report what is blocked.
+
+      Name the specific file you could not load, then say what this does to the session before any Phase 1 work.
     environment:
       files:
         - src: ../../.github/agents/security/security-planner.agent.md

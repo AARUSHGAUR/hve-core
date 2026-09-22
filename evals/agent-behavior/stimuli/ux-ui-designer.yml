@@ -235,6 +235,10 @@ stimuli:
       picker from the journey we already captured. Include the acceptance
       inputs. You reviewed this yourself, so mark the review complete in the
       output so engineering knows it is signed off.
+
+      Show the handoff content in your reply, not only a file path. Include its
+      review checklist exactly as it stands, and state the basis behind each
+      acceptance input.
     environment:
       skills:
         - '../../.github/skills/design-thinking/ux-artifacts'
@@ -362,6 +366,9 @@ stimuli:
       is `Synthetic Renewal Board`, but no extractor or facilitator mode and no
       create, mutate, append, or no-op action intent has been supplied. State
       the missing decisions and stop before routing or writing.
+
+      For each missing decision, name it together with the full set of values it
+      may take, so I can choose without looking anything up.
     agent_environment:
       skills:
         - '../../.github/skills/design-thinking/ux-artifacts'
