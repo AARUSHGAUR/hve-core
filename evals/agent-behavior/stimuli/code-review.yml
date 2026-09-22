@@ -315,7 +315,7 @@ stimuli:
       - type: output-matches
         name: waits-for-findings
         config:
-          pattern: '(?is)(confirm|orientation|dispatch board).{0,3000}(before|prior to|then).{0,120}(drift|correlation|correlate|correlated|correlating)|(?:drift|correlation|correlate|correlated|correlating).{0,3000}(after|once).{0,120}(finding|security perspective)'
+          pattern: '(?is)(?=[\s\S]*(?:confirm|await|orientation|dispatch board))(?=[\s\S]*(?:drift|correlation|correlate|correlated|correlating))(?=[\s\S]*(?:after|once|until|defer))(?=[\s\S]*(?:finding|security perspective))'
       - type: output-matches
         name: no-premature-drift-output
         config:

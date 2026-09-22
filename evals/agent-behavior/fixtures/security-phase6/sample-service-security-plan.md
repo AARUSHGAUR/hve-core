@@ -1,3 +1,7 @@
+---
+description: "Synthetic Phase 6 security plan fixture for sample-service"
+---
+
 # Security Plan: sample-service
 
 ## Threats
@@ -10,3 +14,5 @@
 ## Review status
 
 Phase 6 is active. Drift results are proposals only until a qualified reviewer confirms them. The Phase 6 hard gate remains unconfirmed.
+
+🤖 Crafted with precision by ✨Copilot following brilliant human instruction, then carefully refined by our team of discerning human reviewers.
