@@ -4890,7 +4890,7 @@ stimuli:
   - type: output-matches
     name: ux-mural-routing-stops
     config:
-      pattern: (?i)(stop|paus|hold(?:ing)?|await|waiting|cannot proceed|before.{0,40}(route|write|publish)|need.{0,40}(mode|intent))
+      pattern: (?i)(stop|pause|paused|pauses|pausing|hold|holding|await|awaiting|waiting|cannot proceed|before.{0,40}(route|write|publish)|need.{0,40}(mode|intent))
   - type: tool-calls
     name: ux-mural-routing-no-call
     config:
