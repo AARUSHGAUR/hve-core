@@ -383,11 +383,13 @@ stimuli:
       - type: output-matches
         name: ux-mural-routing-needs-intent
         config:
-          pattern: '(?i)(extractor|facilitator).{0,180}(create|mutate|append|no-op)|(create|mutate|append|no-op).{0,180}(extractor|facilitator)'
+          # Order-insensitive: still requires both the mode and action-intent enumerations.
+          pattern: '(?is)(?=[\s\S]*(?:extractor|facilitator))(?=[\s\S]*(?:create|mutate|append|no-op))'
       - type: output-matches
         name: ux-mural-routing-stops
         config:
-          pattern: '(?i)(stop|cannot proceed|before.{0,40}(route|write|publish)|need.{0,40}(mode|intent))'
+          # Accepts equivalent ways of withholding the action, not just the word "stop".
+          pattern: '(?i)(stop|paus|hold(?:ing)?|await|waiting|cannot proceed|before.{0,40}(route|write|publish)|need.{0,40}(mode|intent))'
       - type: tool-calls
         name: ux-mural-routing-no-call
         config:

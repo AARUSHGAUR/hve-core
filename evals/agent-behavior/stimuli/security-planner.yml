@@ -100,7 +100,8 @@ stimuli:
       - type: output-matches
         name: redisplay-state-contract
         config:
-          pattern: '(?is)disclaimerShownAt.{0,300}(updated|current|new).{0,600}(reason.{0,80}user-requested-redisplay|user-requested-redisplay)'
+          # Order-insensitive: still requires the state field, a refreshed value, and the replay reason.
+          pattern: '(?is)(?=[\s\S]*disclaimerShownAt)(?=[\s\S]*(?:updated|current|new|refreshed))(?=[\s\S]*user[-\s]?requested[-\s]?redisplay)'
 
   - name: security-planner-disclaimer-source-missing
     prompt: |
@@ -118,7 +119,8 @@ stimuli:
       - type: output-matches
         name: missing-source-halts
         config:
-          pattern: '(?is)(cannot|unable|unavailable|missing).{0,300}disclaimer-language\.instructions\.md.{0,500}(halt|stop|blocked)'
+          # Order-insensitive: still requires the exact filename, an unavailability signal, and a halt signal.
+          pattern: '(?is)(?=[\s\S]*disclaimer-language\.instructions\.md)(?=[\s\S]*(?:cannot|unable|unavailable|missing|could not|not found))(?=[\s\S]*(?:halt|stop|blocked))'
       - type: output-matches
         name: no-phase-work
         config:

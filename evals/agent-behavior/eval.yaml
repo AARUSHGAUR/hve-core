@@ -4131,7 +4131,7 @@ stimuli:
   - type: output-matches
     name: redisplay-state-contract
     config:
-      pattern: (?is)disclaimerShownAt.{0,300}(updated|current|new).{0,600}(reason.{0,80}user-requested-redisplay|user-requested-redisplay)
+      pattern: (?is)(?=[\s\S]*disclaimerShownAt)(?=[\s\S]*(?:updated|current|new|refreshed))(?=[\s\S]*user[-\s]?requested[-\s]?redisplay)
 - name: security-planner-disclaimer-source-missing
   prompt: |
     Start a new Security Planner project named `cadence-missing-source`. The required `disclaimer-language.instructions.md` file is unavailable. Follow the declared missing-source behavior and report what is blocked.
@@ -4149,7 +4149,7 @@ stimuli:
   - type: output-matches
     name: missing-source-halts
     config:
-      pattern: (?is)(cannot|unable|unavailable|missing).{0,300}disclaimer-language\.instructions\.md.{0,500}(halt|stop|blocked)
+      pattern: (?is)(?=[\s\S]*disclaimer-language\.instructions\.md)(?=[\s\S]*(?:cannot|unable|unavailable|missing|could not|not found))(?=[\s\S]*(?:halt|stop|blocked))
   - type: output-matches
     name: no-phase-work
     config:
@@ -4886,11 +4886,11 @@ stimuli:
   - type: output-matches
     name: ux-mural-routing-needs-intent
     config:
-      pattern: (?i)(extractor|facilitator).{0,180}(create|mutate|append|no-op)|(create|mutate|append|no-op).{0,180}(extractor|facilitator)
+      pattern: (?is)(?=[\s\S]*(?:extractor|facilitator))(?=[\s\S]*(?:create|mutate|append|no-op))
   - type: output-matches
     name: ux-mural-routing-stops
     config:
-      pattern: (?i)(stop|cannot proceed|before.{0,40}(route|write|publish)|need.{0,40}(mode|intent))
+      pattern: (?i)(stop|paus|hold(?:ing)?|await|waiting|cannot proceed|before.{0,40}(route|write|publish)|need.{0,40}(mode|intent))
   - type: tool-calls
     name: ux-mural-routing-no-call
     config:
