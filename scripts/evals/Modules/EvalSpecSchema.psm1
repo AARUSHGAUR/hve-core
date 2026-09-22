@@ -164,6 +164,10 @@ function Test-EvalEnvironment {
                 $errors.Add(@{ path = $SpecPath; field = $entryField; message = "Empty $field.$entryKey path" })
                 continue
             }
+            if ($pathString -match '^(?:[\\/]{2}|[\\/]\?\?[\\/])') {
+                $errors.Add(@{ path = $SpecPath; field = $entryField; message = "UNC and device paths are not allowed for $field.$entryKey source '$pathString'" })
+                continue
+            }
             try {
                 $resolved = [System.IO.Path]::GetFullPath($pathString, $SpecDirectory)
                 if (-not (Test-Path -LiteralPath $resolved -ErrorAction Stop)) {

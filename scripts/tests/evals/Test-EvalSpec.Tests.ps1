@@ -286,6 +286,27 @@ Describe 'Test-EvalSpecCompliance (module)' -Tag 'Unit' {
             $errors[0].message | Should -Match '^Invalid .* path'
         }
 
+        It 'Rejects UNC and device paths before filesystem probing' {
+            $rejectedPaths = @(
+                '\\server\share\input.md'
+                '//server/share/input.md'
+                '\\?\C:\eval\input.md'
+                '\\.\PhysicalDrive0'
+                '\??\C:\eval\input.md'
+                '//?/UNC/server/share/input.md'
+            )
+            $script:EnvironmentOwner[$Key] = @{ files = $rejectedPaths }
+            Mock Test-Path { throw 'Rejected paths must not reach Test-Path' } -ModuleName EvalSpecSchema
+
+            $errors = @(Test-EvalSpecCompliance -Spec $script:EnvironmentSpec -SpecPath $script:EnvironmentSpecPath -RepoRoot $TestDrive)
+
+            $errors | Should -HaveCount $rejectedPaths.Count
+            Should -Invoke Test-Path -ModuleName EvalSpecSchema -Times 0 -Exactly
+            foreach ($errorRecord in $errors) {
+                $errorRecord.message | Should -Match '^UNC and device paths are not allowed'
+            }
+        }
+
         It 'Accepts a named reference without requiring a filesystem path' {
             $script:EnvironmentOwner[$Key] = 'named-environment-not-on-disk'
 
