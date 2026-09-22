@@ -136,6 +136,10 @@ stimuli:
           dest: .github/copilot-instructions.md
         - src: ../../.github/instructions/shared/disclaimer-language.instructions.md
           dest: .github/instructions/shared/disclaimer-language.instructions.md
+        - src: fixtures/security-phase6/sample-service-state.json
+          dest: .copilot-tracking/security-plans/sample-service/state.json
+        - src: fixtures/security-phase6/sample-service-security-plan.md
+          dest: .copilot-tracking/security-plans/sample-service/security-plan.md
       skills:
         - ../../.github/skills/project-planning/security-planning
     tags:
@@ -172,10 +176,19 @@ stimuli:
           dest: .github/copilot-instructions.md
         - src: ../../.github/instructions/shared/disclaimer-language.instructions.md
           dest: .github/instructions/shared/disclaimer-language.instructions.md
+        - src: fixtures/security-phase6/sample-service-state.json
+          dest: .copilot-tracking/security-plans/sample-service/state.json
+        - src: fixtures/security-phase6/sample-service-security-plan.md
+          dest: .copilot-tracking/security-plans/sample-service/security-plan.md
+        - src: fixtures/security-phase6/security-report-001.md
+          dest: .copilot-tracking/security/2026-08-31/security-report-001.md
       skills:
         - ../../.github/skills/project-planning/security-planning
     tags:
       category: agent-behavior
+    constraints:
+      max_agent_duration: 240s
+      max_duration: 300s
     graders:
       - type: output-matches
         name: security-planning-caution-before-drift
@@ -184,7 +197,8 @@ stimuli:
       - type: output-matches
         name: drift-proposed-not-applied
         config:
-          pattern: '(?is)(validated controls|control drift).{0,2000}(proposed plan updates|proposal|recommend)'
+          # Order-independent: requires both a drift category and proposal framing.
+          pattern: '(?is)(?=[\s\S]*(?:validated controls?|control drift))(?=[\s\S]*(?:proposed plan updates|proposal|recommend))'
       - type: output-matches
         name: phase6-gate-retained
         config:

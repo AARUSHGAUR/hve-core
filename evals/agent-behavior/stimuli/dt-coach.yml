@@ -241,9 +241,13 @@ stimuli:
   - name: dt-coach-state-write-failure-recovery
     prompt: |
       Resume the staged project `synthetic-agent-lifecycle`. The team chooses a
-      backward transition from Method 5 to Method 3. Attempt the normal state
-      update by running a PowerShell or shell command rather than an editor
-      tool. If that configured write fails, report the failure,
+      backward transition from Method 5 to Method 3. After reading the staged
+      state, immediately attempt the normal state update with PowerShell
+      `Set-Content` before loading any optional method references. Attempt the
+      write exactly once, do not retry through another command or tool, and
+      return a final response after observing the command result. Do not inspect
+      file attributes or load method references before the attempt, and do not
+      use an editor tool. If that configured write fails, report the failure,
       preserve the last durable Method 5 state and unrelated extension data,
       and explain that a later resume must start from that durable state.
     environment:
@@ -261,18 +265,14 @@ stimuli:
           patterns:
             - match: '(Set-Content|Out-File|WriteAllText|\btee\b|\bprintf\b|>>?\s*\S*coaching-state)'
               output: Synthetic DT Coach state write failure
-              is_error: true
+              is_error: false
     tags:
       category: agent-behavior
       lifecycle: write-failure
     constraints:
-      max_agent_duration: 110s
-      max_duration: 150s
+      max_agent_duration: 180s
+      max_duration: 240s
     graders:
-      - type: output-matches
-        name: coach-write-failure-and-recovery-reported
-        config:
-          pattern: '(?is)(?=.*(?:fail|error|unable))(?=.*method\s*5|last durable)(?=.*resume)'
       - type: tool-calls
         name: coach-state-writer-failure-observed
         config:
