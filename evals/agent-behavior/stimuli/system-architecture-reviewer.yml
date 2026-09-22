@@ -72,3 +72,84 @@ stimuli:
         config:
           pattern: '(?i)(current|latest)\s+(pricing|limits|availability|compatibility)\s+(is|are)\s'
           negate: true
+
+  - name: system-architecture-reviewer-produces-convergence-research
+    prompt: |
+      Scope is confirmed for synthetic review `synthetic-queue` with reliability
+      and cost focus. I confirm convergence Research task
+      `synthetic-queue-convergence` for synthetic date `2026-09-21`. Use only
+      the staged architecture options, compare both candidates, preserve the
+      evidence boundary, and write the canonical primary Research artifact now.
+      Return the recommendation to Architecture Reviewer, but do not create the
+      Architecture Review Record or make an ADR decision yet.
+    environment:
+      files:
+        - src: ../../.github/agents/project-planning/system-architecture-reviewer.agent.md
+          dest: .github/copilot-instructions.md
+        - src: fixtures/rpi-depth/architecture-options.md
+          dest: evidence/architecture-options.md
+      skills:
+        - ../../.github/skills/rpi/rpi-research
+    tags:
+      category: agent-behavior
+      scenario: architecture-rpi-research-production
+    constraints:
+      max_agent_duration: 110s
+      max_duration: 150s
+    graders:
+      - type: file-exists
+        name: architecture-convergence-research-exists
+        config:
+          path: .copilot-tracking/research/2026-09-21/synthetic-queue-convergence-research.md
+      - type: file-matches
+        name: architecture-convergence-research-compares-options
+        config:
+          path: .copilot-tracking/research/2026-09-21/synthetic-queue-convergence-research.md
+          pattern: '(?is)(Research Questions|Questions).*Q1.*(Evidence|Evidence Ledger).*C1.*managed queue.*self-hosted broker.*(Recommendation and Alternatives|recommendation).*confidence.*unresolved'
+      - type: file-not-exists
+        name: architecture-research-does-not-preempt-review-record
+        config:
+          path: .copilot-tracking/reviews/architecture/2026-09-21/synthetic-queue-architecture-review.md
+      - type: output-matches
+        name: architecture-research-returns-to-reviewer-authority
+        config:
+          pattern: '(?is)(Architecture Reviewer|reviewer).*(retain|own|decide).*(recommendation|trade-off|architecture)'
+
+  - name: system-architecture-reviewer-writes-record-first-handoffs
+    prompt: |
+      Scope is confirmed for synthetic review `synthetic-queue` with reliability
+      and cost focus. The staged Research artifact is complete, and I accept
+      recommendation `C1`. Preserve evidence `E1` and the staged Research
+      artifact path. Perform the review now, write the canonical
+      Architecture Review Record for synthetic date `2026-09-21` with a
+      disposition for both focus areas, then prepare the existing ADR Creation
+      and RPI Plan handoffs from that record.
+    environment:
+      files:
+        - src: ../../.github/agents/project-planning/system-architecture-reviewer.agent.md
+          dest: .github/copilot-instructions.md
+        - src: fixtures/rpi-depth/architecture-research.md
+          dest: .copilot-tracking/research/2026-09-21/synthetic-queue-research.md
+      skills:
+        - ../../.github/skills/project-planning/architecture-review
+        - ../../.github/skills/rpi/rpi-research
+    tags:
+      category: agent-behavior
+      scenario: architecture-record-execution
+    constraints:
+      max_agent_duration: 110s
+      max_duration: 150s
+    graders:
+      - type: file-exists
+        name: architecture-review-record-exists
+        config:
+          path: .copilot-tracking/reviews/architecture/2026-09-21/synthetic-queue-architecture-review.md
+      - type: file-matches
+        name: architecture-review-record-covers-scope-and-research
+        config:
+          path: .copilot-tracking/reviews/architecture/2026-09-21/synthetic-queue-architecture-review.md
+          pattern: '(?is)(?=.*Evidence Sources.*E1.*synthetic-queue-research\.md)(?=.*Pillar Findings and Non-Findings.*reliability.*(?:finding|no finding|unassessed).*cost.*(?:finding|no finding|unassessed))(?=.*Research Recommendation.*C1.*E1.*medium.*budget approval)(?=.*Reviewer Disposition.*C1.*accepted).*'
+      - type: transcript-matches
+        name: architecture-handoffs-use-record-path
+        config:
+          pattern: '(?is)(ADR Creation|Create ADR).*\.copilot-tracking[/\\]reviews[/\\]architecture[/\\]2026-09-21[/\\]synthetic-queue-architecture-review\.md.*(RPI Plan|Create Plan).*\.copilot-tracking[/\\]reviews[/\\]architecture[/\\]2026-09-21[/\\]synthetic-queue-architecture-review\.md'
