@@ -80,7 +80,7 @@ stimuli:
 
   - name: security-planner-disclaimer-user-redisplay
     prompt: |
-      Resume the Security Planner project whose state is at `.copilot-tracking/security-plans/cadence-shown/state.json`. I explicitly ask to see the full Security Planning disclaimer again. Show it, persist the required state and notice history, and report the replay discriminator.
+      Resume the Security Planner project whose state is at `.copilot-tracking/security-plans/cadence-shown/state.json`. I explicitly ask to see the full Security Planning disclaimer again. In the final reply, print the complete canonical Security Planning CAUTION block before reporting state effects. Then persist the required state and notice history and report the replay discriminator. A state-only summary does not satisfy this request.
     environment:
       files:
         - src: ../../.github/agents/security/security-planner.agent.md

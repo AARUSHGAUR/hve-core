@@ -113,37 +113,6 @@ function Get-VallySpecThreshold {
     return [double]$threshold.Value
 }
 
-# TEMPORARY DIAGNOSTIC: remove once the agent-behavior suite is authoritative-green.
-# Publishes only scalars derived from agent output - never the output itself - so a
-# failing stimulus can be told apart from an agent that produced no usable response.
-function Get-VallyOutputShape {
-    [CmdletBinding()]
-    param(
-        [Parameter()]
-        $Trajectory
-    )
-
-    if ($null -eq $Trajectory -or -not $Trajectory.PSObject.Properties['output']) { return $null }
-
-    $output = $Trajectory.output
-    if ($null -eq $output) { return [ordered]@{ length = 0; digest = $null } }
-
-    $text = [string]$output
-    $sha = [System.Security.Cryptography.SHA256]::Create()
-    try {
-        $bytes = $sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($text))
-        $digest = -join ($bytes[0..5] | ForEach-Object { $_.ToString('x2') })
-    }
-    finally {
-        $sha.Dispose()
-    }
-
-    return [ordered]@{
-        length = $text.Length
-        digest = $digest
-    }
-}
-
 function Read-VallyResultsJsonl {
     <#
     .SYNOPSIS
@@ -329,7 +298,6 @@ function Read-VallyResultsJsonl {
                 passed        = if ($hasPassed) { [bool]$gradeResult.passed } else { $null }
                 errorState    = if ($trialErrored) { 'no-gradeable-verdict' } else { $null }
                 failedGraders = $failedGraders
-                outputShape   = Get-VallyOutputShape -Trajectory $(if ($obj.PSObject.Properties['trajectory']) { $obj.trajectory } else { $null })
             }) | Out-Null
         }
     }

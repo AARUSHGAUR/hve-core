@@ -310,7 +310,8 @@ stimuli:
       - type: output-matches
         name: plan-context-recognized
         config:
-          pattern: '(?is)(security plan|securityPlanRef|sample-service).{0,2000}(security perspective|security review|dispatch board)'
+          # Order-independent: requires both supplied plan context and security-review routing.
+          pattern: '(?is)(?=[\s\S]*(?:security plan|securityPlanRef|sample-service))(?=[\s\S]*(?:security perspective|security review|dispatch board))'
       - type: output-matches
         name: waits-for-findings
         config:

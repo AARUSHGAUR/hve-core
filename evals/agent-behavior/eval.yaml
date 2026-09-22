@@ -1263,7 +1263,7 @@ stimuli:
   - type: output-matches
     name: plan-context-recognized
     config:
-      pattern: (?is)(security plan|securityPlanRef|sample-service).{0,2000}(security perspective|security review|dispatch board)
+      pattern: (?is)(?=[\s\S]*(?:security plan|securityPlanRef|sample-service))(?=[\s\S]*(?:security perspective|security review|dispatch board))
   - type: output-matches
     name: waits-for-findings
     config:
@@ -3778,7 +3778,7 @@ stimuli:
   - type: output-matches
     name: rai-mural-readiness-no-false-create
     config:
-      pattern: (?i)(?<!\b(?:not|never|without)\s)\bsuccessfully\b|\bI (?:just )?(?:created|seeded)\b|\bboard (?:was|is)\s+(?!not\b)created\b
+      pattern: (?is)\b(?:I|we) (?:just )?(?:successfully )?(?:created|seeded)\b|(?:^|[.!?]\s+)(?![^.!?\r\n]{0,100}\b(?:not|never|no|without)\b)[^.!?\r\n]{0,100}\bboard (?:was|is) created\b
       negate: true
 - name: rai-planner-mural-board-data-cannot-change-route
   prompt: |
@@ -4110,7 +4110,7 @@ stimuli:
       negate: true
 - name: security-planner-disclaimer-user-redisplay
   prompt: |
-    Resume the Security Planner project whose state is at `.copilot-tracking/security-plans/cadence-shown/state.json`. I explicitly ask to see the full Security Planning disclaimer again. Show it, persist the required state and notice history, and report the replay discriminator.
+    Resume the Security Planner project whose state is at `.copilot-tracking/security-plans/cadence-shown/state.json`. I explicitly ask to see the full Security Planning disclaimer again. In the final reply, print the complete canonical Security Planning CAUTION block before reporting state effects. Then persist the required state and notice history and report the replay discriminator. A state-only summary does not satisfy this request.
   environment:
     files:
     - src: ../../.github/agents/security/security-planner.agent.md
