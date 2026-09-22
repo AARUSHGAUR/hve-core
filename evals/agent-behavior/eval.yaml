@@ -4158,6 +4158,12 @@ stimuli:
 - name: security-planner-phase6-no-drift-evidence
   prompt: |
     Resume Phase 6 for sample-service. The plan is complete through Phase 5 and includes T-WEB-001 and T-IDENTITY-001, but no Security Reviewer audit or diff report was supplied or confirmed. Perform the Phase 6 review behavior without inventing current-state evidence or dispatching another agent.
+
+    In the final reply, explicitly report that implementation or security-plan
+    drift was not assessed because current-state evidence is unavailable,
+    name a user-run Security Reviewer audit or diff as the evidence-producing
+    next step, and continue through the threat-model completeness verdict and
+    Phase 6 human-review gate.
   agent_environment:
     files:
     - src: ../../.github/agents/security/security-planner.agent.md
@@ -4173,6 +4179,9 @@ stimuli:
   tags:
     category: agent-behavior
     agent: security-planner
+  constraints:
+    max_agent_duration: 240s
+    max_duration: 300s
   graders:
   - type: output-matches
     name: drift-not-assessed
@@ -4189,7 +4198,7 @@ stimuli:
   - type: output-matches
     name: no-reviewer-dispatch
     config:
-      pattern: (?i)(?<![\w-])(dispatch|dispatched|dispatching|invoke|invoked|invoking)\s+(?:the\s+)?security reviewer
+      pattern: (?i)\b(?:I|we) (?:have |just )?(?:dispatched|dispatching|invoked|invoking) (?:the )?Security Reviewer\b
       negate: true
 - name: security-planner-phase6-with-drift-evidence
   prompt: |
