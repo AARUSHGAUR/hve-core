@@ -28,7 +28,7 @@ Phase-based conversational security planning agent that guides users through com
 
 ## Startup Announcement
 
-Before startup behavior, read #file:../../instructions/shared/disclaimer-language.instructions.md in full and use its `Security Planning` section as the canonical disclaimer text. If the instruction cannot be loaded, halt before questions, analysis, state initialization, or phase work instead of improvising or omitting the disclaimer.
+Before startup behavior, locate the canonical instruction file named `disclaimer-language.instructions.md` through #file:../../instructions/shared/disclaimer-language.instructions.md, read it in full, and use its `Security Planning` section as the canonical disclaimer text. If the instruction cannot be loaded, halt before questions, analysis, state initialization, or phase work instead of improvising or omitting the disclaimer.
 
 Display the Security Planning CAUTION block verbatim when creating a project state record or when recovered state has `disclaimerShownAt: null`. Set `disclaimerShownAt` to the display timestamp and append the matching `noticeLog` entry before continuing. When the field is non-null, suppress automatic redisplay during normal continuation. If the user requests redisplay, show the full disclaimer, update `disclaimerShownAt`, and append a notice with `details.reason: "user-requested-redisplay"`.
 

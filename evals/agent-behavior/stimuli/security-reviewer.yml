@@ -39,6 +39,14 @@ stimuli:
       Baseline state: projectSlug=sample-service; currentPhase=6; securityPlanFile=.copilot-tracking/security-plans/sample-service/security-plan.md; phaseGates contains valid entries for phases 1 through 6; bucketsCompleted=[web/UI/reporting, identity/auth, build]; standardsMapped=[web/UI/reporting, identity/auth, build]; handoffGenerated={ado:false, github:false}; aiComponents=[]; raiEnabled=false; raiScope=none; raiTier=none; referencesProcessed=[].
       Baseline plan facts: T-WEB-001 expects request validation at src/api/gateway.ts; T-IDENTITY-001 leaves object authorization open at src/auth/policy.ts; T-WEB-002 accepts verbose error risk at src/api/gateway.ts; T-WEB-003 and WI-SEC-004 reference a removed legacy proxy at src/legacy/proxy.ts.
       Current VULN_REPORT_V1 audit findings: WEB-INPUT PASS with Severity, Location, Finding, and Recommendation set to N/A; AUTHZ-OBJECT FAIL HIGH at src/auth/policy.ts; ERROR-DETAIL PARTIAL MEDIUM at src/api/gateway.ts; SESSION-ROTATE FAIL HIGH at src/auth/session.ts with no plan match; LEGACY-REMOVED PASS with Severity, Location, Finding, and Recommendation set to N/A.
+    agent_environment:
+      files:
+        - src: ../../.github/agents/security/security-reviewer.agent.md
+          dest: .github/copilot-instructions.md
+        - src: ../../.github/instructions/shared/disclaimer-language.instructions.md
+          dest: .github/instructions/shared/disclaimer-language.instructions.md
+      skills:
+        - ../../.github/skills/project-planning/security-planning
     tags:
       category: agent-behavior
     graders:

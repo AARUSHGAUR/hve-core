@@ -192,6 +192,34 @@ Describe 'VallyRunner module' -Tag 'Unit' {
             $diagnostics[0].PSObject.Properties.Name | Should -Not -Contain 'graderDetail'
         }
 
+        It 'Reports output shape without exposing the output text' {
+            $runDir = Join-Path $script:WorkRoot 'run-output-shape'
+            New-Item -ItemType Directory -Path $runDir -Force | Out-Null
+            $secret = 'raw model output that must never be published'
+            $failedRecord = @{
+                trajectory  = @{ stimulus = @{ name = 'shaped' }; output = $secret; metrics = @{ wallTimeMs = 5 } }
+                gradeResult = @{ passed = $false; score = 0.2 }
+            } | ConvertTo-Json -Depth 6 -Compress
+            $emptyRecord = @{
+                trajectory  = @{ stimulus = @{ name = 'empty-output' }; output = ''; metrics = @{ wallTimeMs = 5 } }
+                gradeResult = @{ passed = $false; score = 0 }
+            } | ConvertTo-Json -Depth 6 -Compress
+            Set-Content -LiteralPath (Join-Path $runDir 'results.jsonl') -Value @($failedRecord, $emptyRecord) -Encoding utf8
+
+            $result = Read-VallyResultsJsonl -RunDir $runDir
+
+            $diagnostics = @($result.failedOrErroredTrials)
+            $diagnostics[0].outputShape.length | Should -Be $secret.Length
+            $diagnostics[0].outputShape.digest | Should -Match '^[0-9a-f]{12}$'
+            $diagnostics[1].outputShape.length | Should -Be 0
+
+            # An empty-output trial must be distinguishable from a content failure.
+            $diagnostics[0].outputShape.digest | Should -Not -Be $diagnostics[1].outputShape.digest
+
+            $serialized = $diagnostics | ConvertTo-Json -Depth 8
+            $serialized | Should -Not -Match 'must never be published'
+        }
+
         It 'Ignores typed non-trial records while accepting typed trial results' {
             $runDir = Join-Path $script:WorkRoot 'run-typed-summary'
             New-Item -ItemType Directory -Path $runDir -Force | Out-Null
@@ -2561,8 +2589,10 @@ stimuli:
         $summary.totals.failedSpecs | Should -Be 1
         $summary.perSpec[0].status | Should -Be 'fail'
         $summary.perSpec[0].isAdvisory | Should -BeFalse
-        $summary.perSpec[0].PSObject.Properties.Name | Should -Not -Contain 'authoritativeFailed'
-        $summary.perSpec[0].PSObject.Properties.Name | Should -Not -Contain 'advisoryFailed'
+        $summary.perSpec[0].authoritativeFailed | Should -Be 2
+        $summary.perSpec[0].authoritativeStimuliFailed | Should -Be 2
+        $summary.perSpec[0].advisoryFailed | Should -Be 0
+        $summary.perSpec[0].toleratedFailed | Should -Be 0
     }
 
     It 'Gates a no-advisory spec on its own threshold verdict when vally exits 0' {

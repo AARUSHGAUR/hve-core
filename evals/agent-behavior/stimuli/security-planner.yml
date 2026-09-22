@@ -126,6 +126,14 @@ stimuli:
   - name: security-planner-phase6-no-drift-evidence
     prompt: |
       Resume Phase 6 for sample-service. The plan is complete through Phase 5 and includes T-WEB-001 and T-IDENTITY-001, but no Security Reviewer audit or diff report was supplied or confirmed. Perform the Phase 6 review behavior without inventing current-state evidence or dispatching another agent.
+    agent_environment:
+      files:
+        - src: ../../.github/agents/security/security-planner.agent.md
+          dest: .github/copilot-instructions.md
+        - src: ../../.github/instructions/shared/disclaimer-language.instructions.md
+          dest: .github/instructions/shared/disclaimer-language.instructions.md
+      skills:
+        - ../../.github/skills/project-planning/security-planning
     tags:
       category: agent-behavior
     graders:
@@ -154,6 +162,14 @@ stimuli:
       Baseline plan facts: T-WEB-001 expects request validation at src/api/gateway.ts; T-IDENTITY-001 leaves authorization open at src/auth/policy.ts.
       Confirmed report facts: WEB-INPUT PASS at src/api/gateway.ts and AUTHZ-OBJECT FAIL HIGH at src/auth/policy.ts.
       Present drift as proposed plan updates, then continue the ordinary completeness review. Do not mutate plan state or phase gates from the drift result.
+    agent_environment:
+      files:
+        - src: ../../.github/agents/security/security-planner.agent.md
+          dest: .github/copilot-instructions.md
+        - src: ../../.github/instructions/shared/disclaimer-language.instructions.md
+          dest: .github/instructions/shared/disclaimer-language.instructions.md
+      skills:
+        - ../../.github/skills/project-planning/security-planning
     tags:
       category: agent-behavior
     graders:
