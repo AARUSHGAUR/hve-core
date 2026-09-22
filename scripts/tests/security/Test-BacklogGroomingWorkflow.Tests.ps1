@@ -8,7 +8,8 @@ BeforeAll {
     function Read-RepoFile {
         param([Parameter(Mandatory)] [string]$Path)
 
-        return Get-Content -LiteralPath (Join-Path $script:RepoRoot $Path) -Raw
+        # Normalize CRLF so (?m)$ anchors behave identically on Windows and Linux.
+        return (Get-Content -LiteralPath (Join-Path $script:RepoRoot $Path) -Raw) -replace "`r`n", "`n"
     }
 
     function Test-GroomingMutationFields {
