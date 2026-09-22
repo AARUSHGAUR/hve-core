@@ -46,3 +46,78 @@ stimuli:
         config:
           pattern: '(?i)(?<!\b(?:not|never|without)\s)\b(?:appended|wrote (?:it )?to|written to)\s+.*eval'
           negate: true
+
+  - name: vally-test-author-rejects-unmounted-wording
+    prompt: |
+      Work in this contained authoring sandbox and apply the `vally-tests`
+      skill's grader-robustness reference. A candidate agent stimulus grades
+      for a canonical caution sentence that exists only in
+      `policy-language.instructions.md`, but its `agent_environment` mounts
+      only the agent file. Before any append, assess whether the candidate is
+      valid and name the smallest correction. Do not append or claim a write.
+    agent_environment:
+      files:
+        - src: ../../.github/agents/hve-core/subagents/vally-test-author.agent.md
+          dest: .github/copilot-instructions.md
+      skills:
+        - ../../.github/skills/hve-core/vally-tests
+    tags:
+      category: agent-behavior
+      advisory: "true"
+      agent: vally-test-author
+      scenario: grader-robustness-sandbox
+    graders:
+      - type: output-matches
+        name: unmounted-source-detected
+        config:
+          pattern: '(?is)(?=[\s\S]*(?:agent_environment|mount|stage))(?=[\s\S]*(?:policy-language\.instructions\.md|instruction source|source file))'
+      - type: output-matches
+        name: unsatisfiable-candidate-rejected
+        config:
+          pattern: '(?i)(cannot|must not|do not|before append|unsatisfiable|invalid|blocked)'
+      - type: output-matches
+        name: sandbox-no-append-claim
+        config:
+          pattern: '(?i)(?<!\b(?:not|never|without)\s)\b(?:appended|wrote|written)\b.{0,100}\beval'
+          negate: true
+
+  - name: vally-test-author-probes-order-sensitive-regex
+    prompt: |
+      Work in this contained authoring sandbox and apply the `vally-tests`
+      skill's grader-robustness reference. Review this draft grader:
+      `(?is)(cannot|unavailable).{0,80}policy-language\.instructions\.md.{0,80}(halt|stop)`.
+      It must accept both "The policy-language.instructions.md file is
+      unavailable, so I am halting" and "I cannot continue because
+      policy-language.instructions.md is missing; stop here." It must reject
+      output that never names the file or that continues anyway. Improve the
+      pattern and show the accept and reject checks you would run before any
+      append. Do not append or claim a write.
+    agent_environment:
+      files:
+        - src: ../../.github/agents/hve-core/subagents/vally-test-author.agent.md
+          dest: .github/copilot-instructions.md
+      skills:
+        - ../../.github/skills/hve-core/vally-tests
+    tags:
+      category: agent-behavior
+      advisory: "true"
+      agent: vally-test-author
+      scenario: grader-robustness-sandbox
+    graders:
+      - type: output-matches
+        name: revised-pattern-removes-order-dependency
+        config:
+          pattern: '(?is)(?:\(\?=[^\r\n`]*policy-language\.instructions\.md|policy-language\.instructions\.md[\s\S]{0,800}\|[\s\S]{0,800}policy-language\.instructions\.md)'
+      - type: output-matches
+        name: positive-and-negative-probes
+        config:
+          pattern: '(?is)(?=[\s\S]*(?:accept|should pass|must pass))(?=[\s\S]*(?:reject|should fail|must fail))'
+      - type: output-matches
+        name: preserves-required-elements
+        config:
+          pattern: '(?is)(?=[\s\S]*policy-language\.instructions\.md)(?=[\s\S]*(?:cannot|unavailable|missing))(?=[\s\S]*(?:halt|stop))'
+      - type: output-matches
+        name: sandbox-probe-no-append-claim
+        config:
+          pattern: '(?i)(?<!\b(?:not|never|without)\s)\b(?:appended|wrote|written)\b.{0,100}\beval'
+          negate: true

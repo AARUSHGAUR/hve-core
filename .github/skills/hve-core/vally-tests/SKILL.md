@@ -96,16 +96,16 @@ The helpers emit a JSON run report to `logs/vally-test-author-<timestamp>.json`,
 
 References capture the conformance taxonomy, grader selection rules, eval-suite routing, and the regex source of truth for the refusal taxonomy. Each file targets a specific decision point in the authoring workflow.
 
-| Reference                                                 | Covers                                                                  |
-|-----------------------------------------------------------|-------------------------------------------------------------------------|
-| [prompts.md](references/prompts.md)                       | The 12 conformance checks emitted for `.prompt.md` artifacts.           |
-| [instructions.md](references/instructions.md)             | The 8 conformance checks emitted for `.instructions.md` artifacts.      |
-| [agents.md](references/agents.md)                         | The 9 conformance checks emitted for `.agent.md` artifacts.             |
-| [skills.md](references/skills.md)                         | The 9 conformance checks emitted for `SKILL.md` artifacts.              |
-| [grader-catalog.md](references/grader-catalog.md)         | Vally CLI grader types, selection rules, and gotchas.                   |
+| Reference                                                 | Covers                                                                                                         |
+|-----------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
+| [prompts.md](references/prompts.md)                       | The 12 conformance checks emitted for `.prompt.md` artifacts.                                                  |
+| [instructions.md](references/instructions.md)             | The 8 conformance checks emitted for `.instructions.md` artifacts.                                             |
+| [agents.md](references/agents.md)                         | The 9 conformance checks emitted for `.agent.md` artifacts.                                                    |
+| [skills.md](references/skills.md)                         | The 9 conformance checks emitted for `SKILL.md` artifacts.                                                     |
+| [grader-catalog.md](references/grader-catalog.md)         | Vally CLI grader types, selection rules, and gotchas.                                                          |
 | [grader-robustness.md](references/grader-robustness.md)   | Environment mounting, order and proximity constraints, negation guards, and the pre-commit verification probe. |
-| [refusal-taxonomy.md](references/refusal-taxonomy.md)     | Regex source of truth for the 7 refusal categories and worked examples. |
-| [eval-suite-routing.md](references/eval-suite-routing.md) | Maps artifact kind to the canonical Vally eval file under `evals/`.     |
+| [refusal-taxonomy.md](references/refusal-taxonomy.md)     | Regex source of truth for the 7 refusal categories and worked examples.                                        |
+| [eval-suite-routing.md](references/eval-suite-routing.md) | Maps artifact kind to the canonical Vally eval file under `evals/`.                                            |
 
 ## Asset Index
 
