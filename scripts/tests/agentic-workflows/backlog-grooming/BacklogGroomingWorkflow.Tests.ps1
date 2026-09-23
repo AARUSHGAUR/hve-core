@@ -770,6 +770,22 @@ Describe 'Candidate-addressed backlog grooming result construction' -Tag 'Unit' 
         $result.report_data.contract_errors.code | Should -Be @('invalid_row_contract')
     }
 
+    It 'attributes duplicate and missing calls without losing valid siblings' {
+        $result = Invoke-GroomingResult -Items @(
+            (New-GroomingCandidateCall -IssueNumber 10),
+            (New-GroomingCandidateCall -IssueNumber 20),
+            (New-GroomingCandidateCall -IssueNumber 20),
+            (New-GroomingCandidateCall -IssueNumber 30)
+        ) -OrderedCandidateIds @(10, 20, 30, 40)
+
+        $result.report_data.issues.issue | Should -Be @(10, 30)
+        $result.report_data.contract_errors.issue | Should -Be @(20, 40)
+        $result.report_data.contract_errors.code | Should -Be @(
+            'invalid_row_contract',
+            'invalid_row_contract'
+        )
+    }
+
     It 'throws before result construction for <Name> identity calls' -ForEach @(
         @{
             Name = 'invalid'
@@ -779,10 +795,6 @@ Describe 'Candidate-addressed backlog grooming result construction' -Tag 'Unit' 
             Name = 'foreign'
             Message = '*foreign issue identity #99*'
         }
-        @{
-            Name = 'conflicting'
-            Message = '*conflicting issue identity #1*'
-        }
     ) {
         $Items = switch ($Name) {
             'invalid' {
@@ -790,12 +802,6 @@ Describe 'Candidate-addressed backlog grooming result construction' -Tag 'Unit' 
             }
             'foreign' {
                 @(New-GroomingCandidateCall -IssueNumber 99)
-            }
-            'conflicting' {
-                @(
-                    (New-GroomingCandidateCall -IssueNumber 1)
-                    (New-GroomingCandidateCall -IssueNumber 1)
-                )
             }
         }
         { Invoke-GroomingResult -Items $Items -OrderedCandidateIds @(1) } |
@@ -805,7 +811,6 @@ Describe 'Candidate-addressed backlog grooming result construction' -Tag 'Unit' 
     It 'writes no artifact for <Name> identity calls' -ForEach @(
         @{ Name = 'invalid' }
         @{ Name = 'foreign' }
-        @{ Name = 'conflicting' }
     ) {
         $Items = switch ($Name) {
             'invalid' {
@@ -813,12 +818,6 @@ Describe 'Candidate-addressed backlog grooming result construction' -Tag 'Unit' 
             }
             'foreign' {
                 @(New-GroomingCandidateCall -IssueNumber 99)
-            }
-            'conflicting' {
-                @(
-                    (New-GroomingCandidateCall -IssueNumber 1)
-                    (New-GroomingCandidateCall -IssueNumber 1)
-                )
             }
         }
         $AgentOutputPath = Join-Path $TestDrive "$Name-agent-output.json"
@@ -1304,7 +1303,7 @@ Describe 'Backlog grooming production publisher' -Tag 'Unit' {
         $script:HistoryPublisher | Should -Match '<caption>Published backlog grooming sweeps</caption>'
         [regex]::Matches($script:HistoryPublisher, '<th scope=(?:"|\\")col(?:"|\\")>').Count |
             Should -BeGreaterOrEqual 12
-        [regex]::Matches($script:HistoryPublisher, '<th scope="row">').Count | Should -Be 2
+        [regex]::Matches($script:HistoryPublisher, '<th scope="row">').Count | Should -Be 3
         $script:HistoryPublisher | Should -Match '<summary>Evidence for issue #\$\{escapeHtml\(row\.issue\)\}</summary>'
         $script:HistoryPublisher | Should -Match 'backlog-grooming-pages-provenance-\$\{\{ github\.run_id \}\}'
         $script:HistoryPublisher | Should -Match 'publisher_run_id: String\(context\.runId\)'
@@ -1970,6 +1969,8 @@ Describe 'Backlog grooming sweep reduction publication and documentation contrac
         $script:CorePublisher | Should -Match 'Compact trusted tracker exceeds 65,000 characters'
         $script:CorePublisher | Should -Not -Match 'for \(const row of aggregate\.rows\)'
         $script:CorePublisher | Should -Not -Match 'GitHub Pages|detailed report|report history'
+        $script:CorePublisher | Should -Match '\| Normalizations \|'
+        $script:CorePublisher | Should -Match 'aggregate\.normalizations\.length'
         $script:CorePublisher | Should -Match 'Inspect the \[source workflow run\]'
         $script:HistoryPublisher | Should -Match 'View the optional detailed report'
     }
@@ -1992,5 +1993,40 @@ Describe 'Backlog grooming sweep reduction publication and documentation contrac
         }
         $script:WorkflowReadme | Should -Match 'no `workflow_dispatch` trigger'
         $script:WorkflowReadme | Should -Match 'rerun the failed jobs in that original publisher run'
+        $script:WorkflowReadme | Should -Match 'Terminal contract errors'
+        $script:WorkflowReadme | Should -Match 'Final evidence is retained; orchestrator fails after upload and publisher does not activate'
+        $script:WorkflowReadme | Should -Match 'Publication is suppressed because the orchestrator fails after upload'
+        $script:WorkflowReadme | Should -Match 'correct the producer or contract, then start a fresh snapshot'
+        $script:WorkflowReadme | Should -Not -Match 'rerun the unaccepted wave'
+        $script:WorkflowReadme | Should -Match 'Rerun the bound wave'
+        $script:WorkflowReadme | Should -Match 'The unaccepted wave may run again'
+        $script:WorkflowReadme | Should -Match 'normalization count'
+        $script:WorkflowReadme | Should -Match 'per-issue normalization codes'
+    }
+
+    It 'S19 retains terminal diagnostics before blocking non-clean publication' {
+        $script:Orchestrator | Should -Match '## Accepted and Deferred Rows'
+        $script:Orchestrator | Should -Match '## Contract Errors'
+        $script:Orchestrator | Should -Match '## Normalizations'
+        $script:Orchestrator | Should -Match 'core\.setOutput\("contract-errors", String\(contractErrors\.length\)\)'
+        $script:Orchestrator | Should -Match 'Backlog grooming publication blocked'
+        $script:Orchestrator | Should -Match 'Final diagnostic evidence was retained'
+        $script:Orchestrator | Should -Match 'Publication and trusted cursor advancement are blocked'
+        $script:Orchestrator | Should -Match 'core\.setFailed\(`\$\{contractErrors\} snapshot issues have contract errors`\)'
+        $script:Orchestrator | Should -Not -Match 'exact manual replay'
+        $script:Orchestrator.IndexOf('Upload final detailed sweep evidence') |
+            Should -BeLessThan $script:Orchestrator.IndexOf('core.setFailed(`${contractErrors} snapshot issues have contract errors`)')
+        $script:Publisher | Should -Match "github\.event\.workflow_run\.conclusion == 'success'"
+    }
+
+    It 'S20 publishes normalization notes only through clean trusted outputs' {
+        $script:CorePublisher | Should -Match 'aggregate\.contract_errors !== 0'
+        $script:HistoryPublisher | Should -Match 'aggregate\.contract_errors !== 0'
+        $script:HistoryPublisher | Should -Match 'const normalizationRows = aggregate\.normalizations\.length > 0'
+        $script:HistoryPublisher | Should -Match 'aggregate\.normalizations\.map\(\(entry\) =>'
+        $script:HistoryPublisher | Should -Match '<caption>Normalizations for \$\{escapeHtml\(reportSlug\)\}</caption>'
+        $script:HistoryPublisher | Should -Match '\$\{display\(entry\.code\)\}'
+        $script:HistoryPublisher | Should -Match '\$\{escapeHtml\(entry\.issue\)\}'
+        $script:HistoryPublisher | Should -Match '\[reportPath, detailedReportHtml\]'
     }
 }

@@ -1265,13 +1265,26 @@ jobs:
             const finalAggregate = { ...finalMaterial, aggregate_digest: digest(finalMaterial) };
             fs.mkdirSync("final-output", { recursive: true });
             fs.writeFileSync("final-output/aggregate.json", `${JSON.stringify(finalAggregate, null, 2)}\n`);
+            const escapeMarkdown = (value) => String(value).replace(/\|/g, "\\|").replace(/\r?\n/g, "<br>");
             const report = [
               "# Backlog Grooming Sweep Detail", "",
+              "## Accepted and Deferred Rows", "",
               "| Issue | Title | Disposition | Assessment status | Recommended next step |", "|---|---|---|---|---|",
-              ...rows.map((row) => `| #${row.issue} | ${String(row.title).replace(/\|/g, "\\|").replace(/\r?\n/g, "<br>")} | ${row.disposition} | ${row.assessment_status} | ${String(row.recommended_next_step).replace(/\|/g, "\\|").replace(/\r?\n/g, "<br>")} |`),
+              ...rows.map((row) => `| #${row.issue} | ${escapeMarkdown(row.title)} | ${escapeMarkdown(row.disposition)} | ${escapeMarkdown(row.assessment_status)} | ${escapeMarkdown(row.recommended_next_step)} |`),
+              "", "## Contract Errors", "",
+              "| Issue | Code |", "|---|---|",
+              ...(contractErrors.length > 0
+                ? contractErrors.map((entry) => `| #${entry.issue} | ${escapeMarkdown(entry.code)} |`)
+                : ["| None | None |"]),
+              "", "## Normalizations", "",
+              "| Issue | Code |", "|---|---|",
+              ...(normalizations.length > 0
+                ? normalizations.map((entry) => `| #${entry.issue} | ${escapeMarkdown(entry.code)} |`)
+                : ["| None | None |"]),
             ].join("\n");
             fs.writeFileSync("final-output/report.md", `${report}\n`);
             core.setOutput("final-digest", finalAggregate.aggregate_digest);
+            core.setOutput("contract-errors", String(contractErrors.length));
       - name: Upload final detailed sweep evidence
         id: final
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -1280,12 +1293,21 @@ jobs:
           path: final-output
           if-no-files-found: error
           retention-days: 30
-      - name: Record automatic publication inputs
+      - name: Record final publication decision
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          CONTRACT_ERRORS: ${{ steps.reduce.outputs.contract-errors }}
         with:
           script: |
+            const contractErrors = Number(process.env.CONTRACT_ERRORS);
+            if (!Number.isSafeInteger(contractErrors) || contractErrors < 0) {
+              throw new Error("Final contract-error count is invalid");
+            }
+            const publicationBlocked = contractErrors > 0;
             await core.summary
-              .addHeading("Backlog grooming publication queued")
+              .addHeading(publicationBlocked
+                ? "Backlog grooming publication blocked"
+                : "Backlog grooming publication queued")
               .addTable([
                 [{ data: "Publisher input", header: true }, { data: "Value", header: true }],
                 ["final-run-id", String(context.runId)],
@@ -1294,6 +1316,12 @@ jobs:
                 ["sweep-id", "${{ needs.plan.outputs.sweep-id }}"],
                 ["snapshot-digest", "${{ needs.plan.outputs.snapshot-digest }}"],
                 ["source-sha", "${{ needs.plan.outputs.source-sha }}"],
+                ["contract-errors", String(contractErrors)],
               ])
-              .addRaw("\nThe completed run activates Backlog Grooming Publisher automatically. These values also support an exact manual replay.\n")
+              .addRaw(publicationBlocked
+                ? "\nFinal diagnostic evidence was retained. Publication and trusted cursor advancement are blocked.\n"
+                : "\nThe completed clean run activates Backlog Grooming Publisher automatically.\n")
               .write();
+            if (publicationBlocked) {
+              core.setFailed(`${contractErrors} snapshot issues have contract errors`);
+            }

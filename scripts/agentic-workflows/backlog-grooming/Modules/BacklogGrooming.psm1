@@ -885,10 +885,9 @@ function ConvertTo-BacklogGroomingShardResult {
         if (-not $CandidateSet.Contains($IssueId)) {
             throw "Backlog grooming result call has foreign issue identity #$IssueId"
         }
-        if ($CallsByIssue.ContainsKey($IssueId)) {
-            throw "Backlog grooming result calls have conflicting issue identity #$IssueId"
+        if (-not $CallsByIssue.ContainsKey($IssueId)) {
+            $CallsByIssue[$IssueId] = [System.Collections.Generic.List[System.Text.Json.JsonElement]]::new()
         }
-        $CallsByIssue[$IssueId] = [System.Collections.Generic.List[System.Text.Json.JsonElement]]::new()
         $CallsByIssue[$IssueId].Add($Item.Clone())
     }
 
