@@ -210,7 +210,7 @@
   function graphSVG(graph, type) {
     const marker = `diagram-arrow-${++graphSerial}`;
     const titleId = `${marker}-title`;
-    const svg = svgElement('svg', { viewBox: `0 0 1130 ${type === 'plan' ? 335 : 340}`, class: `component-graph ${type}-graph`, role: 'img', 'aria-labelledby': titleId });
+    const svg = svgElement('svg', { viewBox: `0 0 1130 ${type === 'plan' ? 335 : 340}`, class: `component-graph ${type}-graph`, role: 'graphics-document img', 'aria-labelledby': titleId });
     svg.append(svgElement('title', { id: titleId }, graph.title));
     const defs = svgElement('defs');
     const arrow = svgElement('marker', { id: marker, viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' });

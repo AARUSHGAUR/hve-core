@@ -115,3 +115,12 @@ dialog { overflow-wrap: anywhere; }
 .dialog-header { flex-wrap: wrap; }
 .utility-controls { flex-wrap: wrap; }
 .panel h2 { font-size: 34px; margin: 0 0 20px; }
+@media (forced-colors: active) {
+  :root { color-scheme: light dark; --canvas: Canvas; --ink: CanvasText; --muted: CanvasText; --line: CanvasText; --cyan: LinkText; --focus: Highlight; }
+  body, body.reveal-viewport, .reveal .slides > section, #presenter-controls, dialog, .dialog-header, #dialog-content { background: Canvas !important; color: CanvasText !important; }
+  .reveal *, #presenter-controls *, dialog * { color: CanvasText !important; border-color: CanvasText !important; box-shadow: none !important; }
+  a, .reveal a, dialog a { color: LinkText !important; }
+  button, #presenter-controls button, dialog button { background: ButtonFace !important; color: ButtonText !important; border-color: ButtonText !important; }
+  button:disabled { color: GrayText !important; border-color: GrayText !important; opacity: 1; }
+  :focus-visible { outline-color: Highlight !important; }
+}

@@ -65,10 +65,10 @@ rather than adding temporary notes to deck source.
    the visual direction from the brief and references. For an update, retain the incumbent
    design unless the user requests a redesign. Use
    [style-recipes.md](references/style-recipes.md) for concrete CSS ownership, layout and
-  component-data examples; adapt only the patterns needed by the selected deck. Apply the
-  accessibility criteria before choosing layouts or reconstructing controls. Use the
-  `accessibility` skill for criterion interpretation and method adequacy when available;
-  its absence does not waive the checks in [validation.md](references/validation.md).
+   component-data examples; adapt only the patterns needed by the selected deck. Apply the
+   accessibility criteria before choosing layouts or reconstructing controls. Use the
+   `accessibility` skill for criterion interpretation and method adequacy when available;
+   its absence does not waive the checks in [validation.md](references/validation.md).
 4. Read [editing-and-delivery.md](references/editing-and-delivery.md). Apply the complete
    known change set in the owning source files. New decks must replace example-specific
    content, initialization and assertions rather than inheriting the HVE updates narrative.
