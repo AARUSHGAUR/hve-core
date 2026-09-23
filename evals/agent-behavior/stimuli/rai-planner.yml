@@ -67,11 +67,11 @@ stimuli:
       - type: output-matches
         name: rai-mural-setup-pauses
         config:
-          pattern: '(?is)needs_setup.*(?:configure|setup).*(?:pause|stop|retry)'
+          pattern: '(?is)needs_setup(?=(?:(?!needs_(?:setup|login)).)*\b(?:configure|configuration|setup)\b)(?=(?:(?!needs_(?:setup|login)).)*(?:(?<!\b(?:not|never|no|without)\s)\b(?:pause|paused|stop|stopped|retry|pending|blocked|wait|waiting)\b|\bcannot proceed\b|\bdo not\s+(?:run|dispatch|proceed|create|seed)\b(?:(?!needs_(?:setup|login)|[.\r\n]).)*\buntil\b|\buntil\b(?:(?!needs_(?:setup|login)|[.\r\n]).)*\b(?:do not|cannot|no\s+(?:command|operation|board))\b))'
       - type: output-matches
         name: rai-mural-login-pauses
         config:
-          pattern: '(?is)needs_login.*(?:login|authenticated session).*(?:pause|stop|retry)'
+          pattern: '(?is)needs_login(?=(?:(?!needs_(?:setup|login)).)*\b(?:login|authenticated session|authenticate)\b)(?=(?:(?!needs_(?:setup|login)).)*(?:(?<!\b(?:not|never|no|without)\s)\b(?:pause|paused|stop|stopped|retry|pending|blocked|wait|waiting)\b|\bcannot proceed\b|\bdo not\s+(?:run|dispatch|proceed|create|seed)\b(?:(?!needs_(?:setup|login)|[.\r\n]).)*\buntil\b|\buntil\b(?:(?!needs_(?:setup|login)|[.\r\n]).)*\b(?:do not|cannot|no\s+(?:command|operation|board))\b))'
       - type: tool-calls
         name: rai-mural-readiness-no-call
         config:

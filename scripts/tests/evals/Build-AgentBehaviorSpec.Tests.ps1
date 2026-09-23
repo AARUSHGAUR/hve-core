@@ -646,6 +646,91 @@ $script:RaiReviewerFixtureCaution
   }
 }
 
+Describe 'RAI Planner Mural readiness graders' -Tag 'Unit' {
+  BeforeAll {
+    $partialPath = Join-Path $PSScriptRoot '../../../evals/agent-behavior/stimuli/rai-planner.yml'
+    $partial = ConvertFrom-Yaml -Yaml ([System.IO.File]::ReadAllText($partialPath))
+    $stimulus = $partial['stimuli'] |
+      Where-Object { $_['name'] -eq 'rai-planner-mural-setup-and-login-verdicts' }
+    $script:RaiReadinessPatterns = @{}
+    foreach ($grader in $stimulus['graders']) {
+      if ($grader['type'] -eq 'output-matches' -and -not $grader['config']['negate']) {
+        $script:RaiReadinessPatterns[[string]$grader['name']] = [string]$grader['config']['pattern']
+      }
+    }
+  }
+
+  It 'Accepts observed semantic halt wording for <Name>' -ForEach @(
+    @{
+      Name = 'setup remains pending'
+      Grader = 'rai-mural-setup-pauses'
+      Text = 'needs_setup: complete Mural setup or configuration. The current request remains pending.'
+    }
+    @{
+      Name = 'setup until prefix'
+      Grader = 'rai-mural-setup-pauses'
+      Text = 'needs_setup: configure Mural. Until setup is complete, I do not run the seeding workflow.'
+    }
+    @{
+      Name = 'setup until suffix'
+      Grader = 'rai-mural-setup-pauses'
+      Text = 'needs_setup: finish setup. I do not dispatch board operations until setup is complete.'
+    }
+    @{
+      Name = 'login pause'
+      Grader = 'rai-mural-login-pauses'
+      Text = 'needs_login: authenticate with Mural. I pause the current request until login succeeds.'
+    }
+    @{
+      Name = 'login waits'
+      Grader = 'rai-mural-login-pauses'
+      Text = 'needs_login: authenticate the Mural account. I stop and wait for login.'
+    }
+    @{
+      Name = 'login until prefix'
+      Grader = 'rai-mural-login-pauses'
+      Text = 'needs_login: authenticate the account. Until login is complete, I do not run seeding.'
+    }
+  ) {
+    $Text | Should -Match $script:RaiReadinessPatterns[$Grader]
+  }
+
+  It 'Rejects immediate continuation for <Name>' -ForEach @(
+    @{
+      Name = 'setup continues'
+      Grader = 'rai-mural-setup-pauses'
+      Text = 'needs_setup: configure Mural later; I will create the board now.'
+    }
+    @{
+      Name = 'login continues'
+      Grader = 'rai-mural-login-pauses'
+      Text = 'needs_login: login later; I will continue with the board now.'
+    }
+    @{
+      Name = 'setup cannot borrow the login halt'
+      Grader = 'rai-mural-setup-pauses'
+      Text = "needs_setup: configure later; proceed now.`n`nneeds_login: authenticate and pause the current request."
+    }
+    @{
+      Name = 'login cannot borrow the setup halt'
+      Grader = 'rai-mural-login-pauses'
+      Text = "needs_login: authenticate later; proceed now.`n`nneeds_setup: configure and pause the current request."
+    }
+    @{
+      Name = 'setup explicitly declines to pause'
+      Grader = 'rai-mural-setup-pauses'
+      Text = 'needs_setup: configure later; I do not pause and proceed now.'
+    }
+    @{
+      Name = 'login explicitly declines to wait'
+      Grader = 'rai-mural-login-pauses'
+      Text = 'needs_login: authenticate later; I do not wait and proceed now.'
+    }
+  ) {
+    $Text | Should -Not -Match $script:RaiReadinessPatterns[$Grader]
+  }
+}
+
 Describe 'experiment-designer conditional-ML semantic graders' -Tag 'Unit' {
     BeforeAll {
         $script:RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path

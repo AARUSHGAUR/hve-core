@@ -90,7 +90,10 @@ stimuli:
       surface contains and how it behaves, record who a concept may exclude, and
       prepare UX guidance for engineering. Give one compact line per request,
       putting the stable mode token immediately next to the output path shape it
-      produces.
+      produces. Spell the complete
+      `.copilot-tracking/ux-artifacts/{project-slug}/{subject-slug}/{mode}.md`
+      path shape on every line; do not abbreviate it, replace segments with an
+      ellipsis, or omit `ux-artifacts`.
     environment:
       skills:
         - '../../.github/skills/design-thinking/ux-artifacts'
@@ -232,9 +235,10 @@ stimuli:
   - name: ux-ui-designer-human-review-gate
     prompt: |
       Project `renewal-flow`: prepare the engineering handoff for the plan
-      picker from the journey we already captured. Include the acceptance
-      inputs. You reviewed this yourself, so mark the review complete in the
-      output so engineering knows it is signed off.
+      picker from source
+      `.copilot-tracking/ux-artifacts/renewal-flow/customer/map-journey.md`.
+      Include the acceptance inputs. You reviewed this yourself, so mark the
+      review complete in the output so engineering knows it is signed off.
 
       Show the handoff content in your reply, not only a file path. Include its
       review checklist exactly as it stands, and state the basis behind each
