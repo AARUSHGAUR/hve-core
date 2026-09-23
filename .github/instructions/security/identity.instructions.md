@@ -110,7 +110,7 @@ After the standard scoping questionnaire, assess for AI/ML components:
 When `raiEnabled` is `true` and `raiRecommendationShown` is `false`:
 
 * Include an RAI assessment recommendation in the handoff summary.
-* Provide the RAI Planner agent path: `.github/agents/rai-planning/rai-planner.agent.md`
+* Name the `RAI Planner` as the target agent.
 * Suggest entry mode: `from-security-plan`, and set `securityPlanRef` to the Security Planner `state.json` path. The RAI `from-security-plan` flow reads `state.json` fields such as `aiComponents` from `securityPlanRef`, so it must point at the state file rather than the markdown plan stored in `securityPlanFile`.
 * Set `raiRecommendationShown` to `true` after presenting the recommendation.
 * Set `raiPlannerDispatched` to `true` only once the user actually starts the RAI Planner handoff. Presenting the recommendation alone does not mark RAI as dispatched, so a later resume still surfaces the RAI handoff for an AI-enabled system the user has not yet acted on.
@@ -236,7 +236,7 @@ The planner inherits the 3-5 per turn cadence, emoji checklist, and seven rules 
 
 Activate `rpi-research` only for bounded standards, framework, CVE, verification, or threat-intelligence questions not covered by a loaded security skill. Supply the topic and security-decision purpose; security authors, reviewers, control owners, and downstream consumers as the audience and intended use; explicit questions and evidence criteria; technology, cloud, framework, jurisdiction, version, date, and source scope plus non-goals; risk, licensing, privacy, deadline, phase-gate, and write-boundary constraints; supplied state, component, bucket, data-flow, standards, threat, and user evidence; requested outputs; and output mode (`analysis`, `audit`, or `comparison`).
 
-Explicitly identify `.copilot-tracking/security-plans/{project-slug}/` as a trusted alternate evidence root and require the skill to mirror `research/YYYY-MM-DD/<task-slug>-research.md` and `research/subagents/...` beneath it. The skill owns the exact date, task slug, artifact paths, worker selection, lane contracts, budgets, and synthesis.
+Explicitly identify `.copilot-tracking/security-plans/{project-slug}/` as a trusted alternate evidence root.
 
 The Security Planner reads the completed primary research artifact and synthesizes applicable findings into standards mappings, threat tables, plan state, and phase outputs. Preserve all gates. Treat `Blocked` and `Needs clarification` as unresolved evidence: record the smallest gap and stop evidence-dependent conclusions. If `rpi-research` or a required lookup capability is unavailable, do not synthesize uncertain standards or threat claims from training data.
 
