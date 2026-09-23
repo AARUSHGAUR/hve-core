@@ -15,6 +15,8 @@ keywords:
 estimated_reading_time: 4
 ---
 
+<!-- cspell:ignore githubactions -->
+
 ## Overview
 
 This page documents the defensive CI control that guards against risky GitHub Actions
